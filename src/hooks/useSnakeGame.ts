@@ -1,0 +1,286 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { GameState, Direction, Position, PowerUpType } from '../types/game.ts';
+import {
+  INITIAL_SNAKE,
+  generateFood,
+  generatePowerUp,
+  createParticles,
+  updateParticles,
+  moveSnake,
+  checkWallCollision,
+  checkSelfCollision,
+  checkFoodCollision,
+  checkPowerUpCollision,
+  calculateScore,
+  getGameSpeed,
+  getOppositeDirection,
+  BASE_SPEED,
+  LEVEL_THRESHOLD,
+  COMBO_TIME_LIMIT,
+  POWER_UP_DURATION
+} from '../utils/gameLogic.ts';
+
+const HIGH_SCORE_KEY = 'snake-high-score';
+const SOUND_ENABLED_KEY = 'snake-sound-enabled';
+
+export const useSnakeGame = () => {
+  const [gameState, setGameState] = useState<GameState>({
+    snake: INITIAL_SNAKE,
+    food: generateFood(INITIAL_SNAKE),
+    direction: 'RIGHT',
+    score: 0,
+    gameOver: false,
+    gameStarted: false,
+    highScore: parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0'),
+    level: 1,
+    speed: BASE_SPEED,
+    powerUps: [],
+    activePowerUp: null,
+    powerUpEndTime: 0,
+    particles: [],
+    combo: 0,
+    lastFoodTime: 0
+  });
+
+  const [soundEnabled, setSoundEnabled] = useState(
+    localStorage.getItem(SOUND_ENABLED_KEY) !== 'false'
+  );
+
+  const gameLoopRef = useRef<NodeJS.Timeout>();
+  const directionRef = useRef<Direction>('RIGHT');
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Initialize audio context
+  useEffect(() => {
+    if (soundEnabled && !audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+  }, [soundEnabled]);
+
+  const playSound = useCallback((frequency: number, duration: number, type: OscillatorType = 'square') => {
+    if (!soundEnabled || !audioContextRef.current) return;
+    
+    const oscillator = audioContextRef.current.createOscillator();
+    const gainNode = audioContextRef.current.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContextRef.current.destination);
+    
+    oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+    oscillator.type = type;
+    
+    gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration);
+    
+    oscillator.start(audioContextRef.current.currentTime);
+    oscillator.stop(audioContextRef.current.currentTime + duration);
+  }, [soundEnabled]);
+
+  const toggleSound = useCallback(() => {
+    const newSoundEnabled = !soundEnabled;
+    setSoundEnabled(newSoundEnabled);
+    localStorage.setItem(SOUND_ENABLED_KEY, newSoundEnabled.toString());
+  }, [soundEnabled]);
+
+  const resetGame = useCallback(() => {
+    const initialSnake = INITIAL_SNAKE;
+    setGameState({
+      snake: initialSnake,
+      food: generateFood(initialSnake),
+      direction: 'RIGHT',
+      score: 0,
+      gameOver: false,
+      gameStarted: false,
+      highScore: parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0'),
+      level: 1,
+      speed: BASE_SPEED,
+      powerUps: [],
+      activePowerUp: null,
+      powerUpEndTime: 0,
+      particles: [],
+      combo: 0,
+      lastFoodTime: 0
+    });
+    directionRef.current = 'RIGHT';
+  }, []);
+
+  const startGame = useCallback(() => {
+    setGameState(prev => ({ ...prev, gameStarted: true }));
+  }, []);
+
+  const changeDirection = useCallback((newDirection: Direction) => {
+    if (getOppositeDirection(directionRef.current) !== newDirection) {
+      directionRef.current = newDirection;
+      setGameState(prev => ({ ...prev, direction: newDirection }));
+    }
+  }, []);
+
+  const gameLoop = useCallback(() => {
+    setGameState(prevState => {
+      if (prevState.gameOver || !prevState.gameStarted) {
+        return prevState;
+      }
+
+      const newSnake = moveSnake(prevState.snake, directionRef.current);
+      const head = newSnake[0];
+      const currentTime = Date.now();
+      
+      // Update particles
+      const updatedParticles = updateParticles(prevState.particles);
+      
+      // Remove expired power-ups
+      const activePowerUps = prevState.powerUps.filter(powerUp => powerUp.expiresAt > currentTime);
+      
+      // Check if active power-up expired
+      const activePowerUp = currentTime < prevState.powerUpEndTime ? prevState.activePowerUp : null;
+
+      // Check collisions
+      if (checkWallCollision(head) || checkSelfCollision(newSnake)) {
+        playSound(150, 0.5);
+        const newHighScore = Math.max(prevState.score, prevState.highScore);
+        if (newHighScore > prevState.highScore) {
+          localStorage.setItem(HIGH_SCORE_KEY, newHighScore.toString());
+        }
+        return {
+          ...prevState,
+          gameOver: true,
+          highScore: newHighScore,
+          particles: [...updatedParticles, ...createParticles(head.x, head.y, '#ef4444')]
+        };
+      }
+      
+      // Check power-up collision
+      const collectedPowerUp = checkPowerUpCollision(head, activePowerUps);
+      let newActivePowerUp = activePowerUp;
+      let newPowerUpEndTime = prevState.powerUpEndTime;
+      let newPowerUps = activePowerUps;
+      
+      if (collectedPowerUp) {
+        playSound(800, 0.2);
+        newActivePowerUp = collectedPowerUp.type;
+        newPowerUpEndTime = currentTime + POWER_UP_DURATION;
+        newPowerUps = activePowerUps.filter(p => p !== collectedPowerUp);
+      }
+
+      // Check food collision
+      if (checkFoodCollision(head, prevState.food)) {
+        playSound(440, 0.1);
+        
+        // Calculate combo
+        const timeSinceLastFood = currentTime - prevState.lastFoodTime;
+        const newCombo = timeSinceLastFood < COMBO_TIME_LIMIT ? prevState.combo + 1 : 1;
+        
+        // Calculate score with combo and level multipliers
+        const baseScore = newActivePowerUp === 'double' ? 20 : 10;
+        const scoreIncrease = calculateScore(baseScore, newCombo, prevState.level);
+        const newScore = prevState.score + scoreIncrease;
+        
+        // Calculate level
+        const newLevel = Math.floor(newScore / LEVEL_THRESHOLD) + 1;
+        
+        const grownSnake = [...newSnake, newSnake[newSnake.length - 1]];
+        const newFood = generateFood(grownSnake);
+        
+        // Handle shrink power-up
+        let finalSnake = grownSnake;
+        if (newActivePowerUp === 'shrink' && grownSnake.length > 3) {
+          finalSnake = grownSnake.slice(0, -2); // Remove 2 segments instead of growing
+        }
+        
+        // Generate new power-up occasionally
+        const newPowerUp = generatePowerUp(finalSnake, newFood);
+        if (newPowerUp) {
+          newPowerUps.push(newPowerUp);
+        }
+        
+        return {
+          ...prevState,
+          snake: finalSnake,
+          food: newFood,
+          score: newScore,
+          level: newLevel,
+          speed: getGameSpeed(newLevel, newActivePowerUp, BASE_SPEED),
+          powerUps: newPowerUps,
+          activePowerUp: newActivePowerUp,
+          powerUpEndTime: newPowerUpEndTime,
+          particles: [...updatedParticles, ...createParticles(head.x, head.y, '#22c55e')],
+          combo: newCombo,
+          lastFoodTime: currentTime
+        };
+      }
+
+      return {
+        ...prevState,
+        snake: newSnake,
+        powerUps: newPowerUps,
+        activePowerUp: newActivePowerUp,
+        powerUpEndTime: newPowerUpEndTime,
+        particles: updatedParticles,
+        speed: getGameSpeed(prevState.level, newActivePowerUp, BASE_SPEED)
+      };
+    });
+  }, [playSound]);
+
+  useEffect(() => {
+    if (gameState.gameStarted && !gameState.gameOver) {
+      gameLoopRef.current = setInterval(gameLoop, gameState.speed);
+    } else {
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
+      }
+    }
+
+    return () => {
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
+      }
+    };
+  }, [gameLoop, gameState.gameStarted, gameState.gameOver, gameState.speed]);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!gameState.gameStarted && !gameState.gameOver && e.code === 'Space') {
+        startGame();
+        return;
+      }
+
+      if (gameState.gameOver && e.code === 'Space') {
+        resetGame();
+        return;
+      }
+
+      if (!gameState.gameStarted || gameState.gameOver) return;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          changeDirection('UP');
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          changeDirection('DOWN');
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          changeDirection('LEFT');
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          changeDirection('RIGHT');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [gameState.gameStarted, gameState.gameOver, changeDirection, startGame, resetGame]);
+
+  return {
+    gameState,
+    startGame,
+    resetGame,
+    changeDirection,
+    soundEnabled,
+    toggleSound
+  };
+}
