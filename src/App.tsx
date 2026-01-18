@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import Game from './components/Game.tsx';
+=======
+import Game from './components/Game';
+>>>>>>> a0b0b786f9f3ca227ce67875933ce8a530515cbb
 import TestPage from './components/TestPage';
 import ThemeToggle from './components/ThemeToggle';
 import { FileText } from 'lucide-react';

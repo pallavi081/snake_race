@@ -1,1 +1,67 @@
+<<<<<<< HEAD
 // This file is obsolete and should be deleted. Its content has been moved to Game.tsx
+=======
+import React from 'react';
+import { useSnakeGame } from '../hooks/useSnakeGame';
+import GameCanvas from './GameCanvas';
+import MobileControls from './MobileControls';
+import ScoreBoard from './ScoreBoard';
+import GameInstructions from './GameInstructions';
+import SoundToggle from './SoundToggle';
+import PowerUpInfo from './PowerUpInfo';
+
+interface GameProps {
+  isDarkMode: boolean;
+}
+
+const Game: React.FC<GameProps> = ({ isDarkMode }) => {
+  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound } = useSnakeGame();
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <div className="w-full max-w-md">
+        <h1 className={`text-3xl font-bold text-center mb-6 ${
+          isDarkMode ? 'text-white' : 'text-gray-800'
+        }`}>
+          Snake Game
+        </h1>
+        
+        <div className="flex justify-end mb-4">
+          <SoundToggle soundEnabled={soundEnabled} onToggle={toggleSound} isDarkMode={isDarkMode} />
+        </div>
+        
+        <ScoreBoard 
+          score={gameState.score} 
+          highScore={gameState.highScore}
+          level={gameState.level}
+          combo={gameState.combo}
+          isDarkMode={isDarkMode}
+        />
+        
+        <PowerUpInfo 
+          activePowerUp={gameState.activePowerUp}
+          powerUpEndTime={gameState.powerUpEndTime}
+          isDarkMode={isDarkMode}
+        />
+        
+        <div className="flex justify-center">
+          <GameCanvas gameState={gameState} isDarkMode={isDarkMode} />
+        </div>
+        
+        <MobileControls
+          onDirectionChange={changeDirection}
+          onStart={startGame}
+          onRestart={resetGame}
+          gameStarted={gameState.gameStarted}
+          gameOver={gameState.gameOver}
+          isDarkMode={isDarkMode}
+        />
+        
+        <GameInstructions isDarkMode={isDarkMode} />
+      </div>
+    </div>
+  );
+};
+
+export default Game;
+>>>>>>> a0b0b786f9f3ca227ce67875933ce8a530515cbb

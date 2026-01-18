@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from 'react';
+<<<<<<< HEAD
 import { GameState, PowerUpType } from '../types/game.ts';
 import { GRID_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/gameLogic.ts';
+=======
+import { GameState, PowerUpType } from '../types/game';
+import { GRID_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/gameLogic';
+>>>>>>> a0b0b786f9f3ca227ce67875933ce8a530515cbb
 
 interface GameCanvasProps {
   gameState: GameState;
