@@ -46,6 +46,21 @@ To get a local copy up and running follow these simple steps.
     npm run dev
     ```
 
+## Deployment
+
+This project can be easily deployed to [Vercel](https://vercel.com/).
+
+1. Sign up for a [Vercel](https://vercel.com/) account.
+2. Install the Vercel CLI.
+    ```sh
+    npm install -g vercel
+    ```
+3. From the project root, run the `vercel` command.
+    ```sh
+    vercel
+    ```
+4. Follow the on-screen instructions to link your project to Vercel and deploy it.
+
 ## Developer
 
 - **Pallavi** - [https://github.com/pallavi081](https://github.com/pallavi081)
