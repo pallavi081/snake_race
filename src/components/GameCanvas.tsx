@@ -1,23 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-<<<<<<< HEAD
 import { GameState, PowerUpType } from '../types/game.ts';
-import { GRID_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/gameLogic.ts';
-=======
-import { GameState, PowerUpType } from '../types/game';
-import { GRID_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../utils/gameLogic';
->>>>>>> a0b0b786f9f3ca227ce67875933ce8a530515cbb
+import { GRID_SIZE } from '../utils/gameLogic.ts';
 
 interface GameCanvasProps {
   gameState: GameState;
-  isDarkMode: boolean;
 }
 
-const getPowerUpColor = (type: PowerUpType, isDarkMode: boolean) => {
+const getPowerUpColor = (type: PowerUpType) => {
   const colors = {
-    speed: isDarkMode ? '#3b82f6' : '#2563eb',
-    slow: isDarkMode ? '#8b5cf6' : '#7c3aed',
-    double: isDarkMode ? '#f59e0b' : '#d97706',
-    shrink: isDarkMode ? '#06b6d4' : '#0891b2'
+    speed: '#3b82f6',
+    slow: '#8b5cf6',
+    double: '#f59e0b',
+    shrink: '#06b6d4'
   };
   return colors[type];
 };
@@ -32,8 +26,9 @@ const getPowerUpSymbol = (type: PowerUpType) => {
   return symbols[type];
 };
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { canvasWidth, canvasHeight, settings } = gameState;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -43,24 +38,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = isDarkMode ? '#1a1a1a' : '#f8f9fa';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Draw grid
-    ctx.strokeStyle = isDarkMode ? '#333' : '#e0e0e0';
+    ctx.strokeStyle = '#333';
     ctx.lineWidth = 0.5;
     
-    for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
+    for (let x = 0; x <= canvasWidth; x += GRID_SIZE) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
-      ctx.lineTo(x, CANVAS_HEIGHT);
+      ctx.lineTo(x, canvasHeight);
       ctx.stroke();
     }
     
-    for (let y = 0; y <= CANVAS_HEIGHT; y += GRID_SIZE) {
+    for (let y = 0; y <= canvasHeight; y += GRID_SIZE) {
       ctx.beginPath();
       ctx.moveTo(0, y);
-      ctx.lineTo(CANVAS_WIDTH, y);
+      ctx.lineTo(canvasWidth, y);
       ctx.stroke();
     }
 
@@ -75,15 +70,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
     gameState.snake.forEach((segment, index) => {
       if (index === 0) {
         // Snake head
-        ctx.fillStyle = isDarkMode ? '#4ade80' : '#22c55e';
-        ctx.shadowColor = isDarkMode ? '#4ade80' : '#22c55e';
+        ctx.fillStyle = settings.snakeHeadColor;
+        ctx.shadowColor = settings.snakeHeadColor;
         ctx.shadowBlur = 10;
       } else {
         // Snake body
-        const intensity = 1 - (index / gameState.snake.length) * 0.3;
-        ctx.fillStyle = isDarkMode ? 
-          `rgba(34, 197, 94, ${intensity})` : 
-          `rgba(21, 128, 61, ${intensity})`;
+        ctx.fillStyle = settings.snakeBodyColor;
         ctx.shadowBlur = 0;
       }
       
@@ -96,8 +88,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
     });
 
     // Draw food
-    ctx.fillStyle = isDarkMode ? '#ef4444' : '#dc2626';
-    ctx.shadowColor = isDarkMode ? '#ef4444' : '#dc2626';
+    ctx.fillStyle = settings.foodColor;
+    ctx.shadowColor = settings.foodColor;
     ctx.shadowBlur = 15;
     ctx.fillRect(
       gameState.food.x * GRID_SIZE + 2,
@@ -108,7 +100,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
     
     // Draw power-ups
     gameState.powerUps.forEach(powerUp => {
-      const color = getPowerUpColor(powerUp.type, isDarkMode);
+      const color = getPowerUpColor(powerUp.type);
       ctx.fillStyle = color;
       ctx.shadowColor = color;
       ctx.shadowBlur = 10;
@@ -123,7 +115,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
       
       // Draw power-up symbol
       ctx.shadowBlur = 0;
-      ctx.fillStyle = isDarkMode ? '#ffffff' : '#000000';
+      ctx.fillStyle = '#ffffff';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(
@@ -134,15 +126,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, isDarkMode }) => {
     });
     
     ctx.shadowBlur = 0;
-  }, [gameState.snake, gameState.food, gameState.powerUps, gameState.particles, isDarkMode]);
+  }, [gameState.snake, gameState.food, gameState.powerUps, gameState.particles, canvasWidth, canvasHeight, settings]);
 
   return (
     <div className="relative">
       <canvas
         ref={canvasRef}
-        width={CANVAS_WIDTH}
-        height={CANVAS_HEIGHT}
-        className="border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-lg"
+        width={canvasWidth}
+        height={canvasHeight}
+        className="border-2 border-gray-600 rounded-lg shadow-lg"
         style={{ imageRendering: 'pixelated' }}
       />
       

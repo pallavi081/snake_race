@@ -1,12 +1,11 @@
 import React from 'react';
-import { ArrowLeft, Code2, Gamepad2, Smartphone, Palette, Trophy } from 'lucide-react';
+import { ArrowLeft, Code2, Gamepad2, Smartphone, Palette, Trophy, Zap, Volume2, Sparkles } from 'lucide-react';
 
 interface TestPageProps {
-  isDarkMode: boolean;
   onBack: () => void;
 }
 
-const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
+const TestPage: React.FC<TestPageProps> = ({ onBack }) => {
   const features = [
     {
       icon: <Gamepad2 className="w-6 h-6" />,
@@ -66,51 +65,38 @@ const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
   ];
 
   return (
-    <div className={`min-h-screen p-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className="min-h-screen p-4 bg-gray-900">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={onBack}
-            className={`
-              p-2 rounded-lg transition-all duration-200
-              ${isDarkMode 
-                ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600' 
-                : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-md'
-              }
-              hover:scale-105 active:scale-95
-            `}
+            className="p-2 rounded-lg transition-all duration-200 bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 hover:scale-105 active:scale-95"
           >
             <ArrowLeft size={20} />
           </button>
           
-          <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+          <h1 className="text-3xl font-bold text-white">
             Snake Game - Test & Documentation
           </h1>
         </div>
 
         {/* Developer Info */}
-        <div className={`
-          p-6 rounded-lg mb-8
-          ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200 shadow-md'}
-        `}>
-          <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <div className="p-6 rounded-lg mb-8 bg-gray-800 border border-gray-700">
+          <h2 className="text-2xl font-bold mb-4 text-white">
             Developer Information
           </h2>
           <div className="flex items-center gap-4">
-            <div className={`
-              w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold
-              ${isDarkMode ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white' : 'bg-gradient-to-br from-purple-500 to-blue-500 text-white'}
-            `}>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold bg-gradient-to-br from-purple-600 to-blue-600 text-white">
               PK
             </div>
             <div>
-              <h3 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              <h3 className="text-xl font-semibold text-white">
                 Pallavi Kumari
               </h3>
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className="text-gray-300">
                 Full Stack Developer
               </p>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <p className="text-sm text-gray-400">
                 Specialized in React, TypeScript, and Modern Web Development
               </p>
             </div>
@@ -118,26 +104,20 @@ const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
         </div>
 
         {/* Features */}
-        <div className={`
-          p-6 rounded-lg mb-8
-          ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200 shadow-md'}
-        `}>
-          <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <div className="p-6 rounded-lg mb-8 bg-gray-800 border border-gray-700">
+          <h2 className="text-2xl font-bold mb-6 text-white">
             Game Features
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <div key={index} className={`
-                p-4 rounded-lg
-                ${isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'}
-              `}>
-                <div className={`flex items-center gap-3 mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+              <div key={index} className="p-4 rounded-lg bg-gray-700 border border-gray-600">
+                <div className="flex items-center gap-3 mb-2 text-blue-400">
                   {feature.icon}
-                  <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  <h3 className="font-semibold text-white">
                     {feature.title}
                   </h3>
                 </div>
-                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className="text-sm text-gray-300">
                   {feature.description}
                 </p>
               </div>
@@ -146,28 +126,22 @@ const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
         </div>
 
         {/* Test Results */}
-        <div className={`
-          p-6 rounded-lg mb-8
-          ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200 shadow-md'}
-        `}>
-          <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <div className="p-6 rounded-lg mb-8 bg-gray-800 border border-gray-700">
+          <h2 className="text-2xl font-bold mb-6 text-white">
             Test Results
           </h2>
           <div className="space-y-4">
             {testResults.map((test, index) => (
-              <div key={index} className={`
-                flex flex-col sm:flex-row sm:items-center gap-2 p-4 rounded-lg
-                ${isDarkMode ? 'bg-gray-700 border border-gray-600' : 'bg-gray-50 border border-gray-200'}
-              `}>
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-2 p-4 rounded-lg bg-gray-700 border border-gray-600">
                 <div className="flex items-center gap-4 sm:flex-1">
-                  <span className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                  <span className="font-semibold text-white">
                     {test.test}
                   </span>
                   <span className="text-green-600 font-mono font-bold">
                     {test.status}
                   </span>
                 </div>
-                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <span className="text-sm text-gray-300">
                   {test.details}
                 </span>
               </div>
@@ -176,19 +150,16 @@ const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
         </div>
 
         {/* Technical Details */}
-        <div className={`
-          p-6 rounded-lg
-          ${isDarkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200 shadow-md'}
-        `}>
-          <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+        <div className="p-6 rounded-lg bg-gray-800 border border-gray-700">
+          <h2 className="text-2xl font-bold mb-6 text-white">
             Technical Implementation
           </h2>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              <h3 className="font-semibold mb-3 text-white">
                 Frontend Technologies
               </h3>
-              <ul className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <ul className="space-y-2 text-sm text-gray-300">
                 <li>• React 18 with TypeScript for type safety</li>
                 <li>• Custom hooks for game logic separation</li>
                 <li>• Canvas API for smooth game rendering</li>
@@ -200,10 +171,10 @@ const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
               </ul>
             </div>
             <div>
-              <h3 className={`font-semibold mb-3 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+              <h3 className="font-semibold mb-3 text-white">
                 Game Architecture
               </h3>
-              <ul className={`space-y-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <ul className="space-y-2 text-sm text-gray-300">
                 <li>• Modular component architecture</li>
                 <li>• Separation of concerns with utility functions</li>
                 <li>• Advanced state management with complex game logic</li>
@@ -219,5 +190,4 @@ const TestPage: React.FC<TestPageProps> = ({ isDarkMode, onBack }) => {
     </div>
   );
 };
-
 export default TestPage;

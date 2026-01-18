@@ -8,7 +8,6 @@ interface MobileControlsProps {
   onRestart: () => void;
   gameStarted: boolean;
   gameOver: boolean;
-  isDarkMode: boolean;
 }
 
 const MobileControls: React.FC<MobileControlsProps> = ({
@@ -16,54 +15,32 @@ const MobileControls: React.FC<MobileControlsProps> = ({
   onStart,
   onRestart,
   gameStarted,
-  gameOver,
-  isDarkMode
+  gameOver
 }) => {
   const buttonClass = `
-    w-16 h-16 rounded-lg flex items-center justify-center transition-all duration-200
-    ${isDarkMode 
-      ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' 
-      : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 shadow-md'
-    }
+    w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200
+    bg-gray-700 bg-opacity-50 hover:bg-opacity-75 text-white
     active:scale-95 select-none touch-manipulation
   `;
 
   const actionButtonClass = `
-    px-6 py-3 rounded-lg font-semibold transition-all duration-200
-    ${isDarkMode
-      ? 'bg-green-600 hover:bg-green-700 text-white'
-      : 'bg-green-500 hover:bg-green-600 text-white shadow-md'
-    }
+    px-8 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center
+    bg-green-600 bg-opacity-80 hover:bg-opacity-100 text-white
     active:scale-95 select-none touch-manipulation
   `;
 
   return (
-    <div className="flex flex-col items-center gap-4 mt-6 md:hidden">
-      {/* Action Button */}
-      <div>
-        {!gameStarted && !gameOver ? (
-          <button className={actionButtonClass} onClick={onStart}>
-            <Play size={20} className="mr-2" />
-            Start Game
-          </button>
-        ) : gameOver ? (
-          <button className={actionButtonClass} onClick={onRestart}>
-            <RotateCcw size={20} className="mr-2" />
-            Restart
-          </button>
-        ) : null}
-      </div>
-
+    <div className="flex flex-col items-center gap-4 mt-4 md:hidden">
       {/* Directional Controls */}
       {gameStarted && !gameOver && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           <div></div>
           <button
             className={buttonClass}
             onTouchStart={() => onDirectionChange('UP')}
             onClick={() => onDirectionChange('UP')}
           >
-            <ChevronUp size={24} />
+            <ChevronUp size={32} />
           </button>
           <div></div>
           
@@ -72,7 +49,7 @@ const MobileControls: React.FC<MobileControlsProps> = ({
             onTouchStart={() => onDirectionChange('LEFT')}
             onClick={() => onDirectionChange('LEFT')}
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={32} />
           </button>
           <div></div>
           <button
@@ -80,7 +57,7 @@ const MobileControls: React.FC<MobileControlsProps> = ({
             onTouchStart={() => onDirectionChange('RIGHT')}
             onClick={() => onDirectionChange('RIGHT')}
           >
-            <ChevronRight size={24} />
+            <ChevronRight size={32} />
           </button>
           
           <div></div>
@@ -89,11 +66,26 @@ const MobileControls: React.FC<MobileControlsProps> = ({
             onTouchStart={() => onDirectionChange('DOWN')}
             onClick={() => onDirectionChange('DOWN')}
           >
-            <ChevronDown size={24} />
+            <ChevronDown size={32} />
           </button>
           <div></div>
         </div>
       )}
+      
+      {/* Action Button */}
+      <div className="mt-4">
+        {!gameStarted && !gameOver ? (
+          <button className={actionButtonClass} onClick={onStart}>
+            <Play size={24} className="mr-2" />
+            Start Game
+          </button>
+        ) : gameOver ? (
+          <button className={actionButtonClass} onClick={onRestart}>
+            <RotateCcw size={24} className="mr-2" />
+            Restart
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 };

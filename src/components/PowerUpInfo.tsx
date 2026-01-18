@@ -4,7 +4,6 @@ import { PowerUpType } from '../types/game';
 interface PowerUpInfoProps {
   activePowerUp: PowerUpType | null;
   powerUpEndTime: number;
-  isDarkMode: boolean;
 }
 
 const getPowerUpInfo = (type: PowerUpType) => {
@@ -17,7 +16,7 @@ const getPowerUpInfo = (type: PowerUpType) => {
   return info[type];
 };
 
-const PowerUpInfo: React.FC<PowerUpInfoProps> = ({ activePowerUp, powerUpEndTime, isDarkMode }) => {
+const PowerUpInfo: React.FC<PowerUpInfoProps> = ({ activePowerUp, powerUpEndTime }) => {
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
@@ -33,12 +32,9 @@ const PowerUpInfo: React.FC<PowerUpInfoProps> = ({ activePowerUp, powerUpEndTime
 
   if (!activePowerUp || timeLeft <= 0) {
     return (
-      <div className={`
-        h-16 mb-4 p-3 rounded-lg border-2 border-dashed
-        ${isDarkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-50'}
-      `}>
+      <div className="h-16 mb-4 p-3 rounded-lg border-2 border-dashed border-gray-600 bg-gray-800">
         <div className="flex items-center justify-center h-full">
-          <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <span className="text-sm text-gray-400">
             Collect power-ups for special abilities!
           </span>
         </div>
@@ -50,16 +46,14 @@ const PowerUpInfo: React.FC<PowerUpInfoProps> = ({ activePowerUp, powerUpEndTime
   const progress = (timeLeft / 5000) * 100; // 5 seconds duration
 
   const colorClasses = {
-    blue: isDarkMode ? 'bg-blue-600 border-blue-500' : 'bg-blue-500 border-blue-400',
-    purple: isDarkMode ? 'bg-purple-600 border-purple-500' : 'bg-purple-500 border-purple-400',
-    yellow: isDarkMode ? 'bg-yellow-600 border-yellow-500' : 'bg-yellow-500 border-yellow-400',
-    cyan: isDarkMode ? 'bg-cyan-600 border-cyan-500' : 'bg-cyan-500 border-cyan-400'
+    blue: 'bg-blue-600 border-blue-500',
+    purple: 'bg-purple-600 border-purple-500',
+    yellow: 'bg-yellow-600 border-yellow-500',
+    cyan: 'bg-cyan-600 border-cyan-500'
   };
 
   return (
-    <div className={`
-      mb-4 p-3 rounded-lg border-2 ${colorClasses[powerUpInfo.color as keyof typeof colorClasses]}
-    `}>
+    <div className={`mb-4 p-3 rounded-lg border-2 ${colorClasses[powerUpInfo.color as keyof typeof colorClasses]}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-lg">{powerUpInfo.symbol}</span>

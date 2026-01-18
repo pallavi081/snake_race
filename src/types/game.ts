@@ -21,6 +21,12 @@ export interface Particle {
   color: string;
 }
 
+export interface Settings {
+  foodColor: string;
+  snakeHeadColor: string;
+  snakeBodyColor: string;
+}
+
 export interface GameState {
   snake: Position[];
   food: Position;
@@ -37,9 +43,14 @@ export interface GameState {
   particles: Particle[];
   combo: number;
   lastFoodTime: number;
+  difficulty: Difficulty;
+  canvasWidth: number;
+  canvasHeight: number;
+  settings: Settings;
 }
 
 export type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
+export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface GameConfig {
   gridSize: number;

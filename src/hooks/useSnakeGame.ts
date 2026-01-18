@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { GameState, Direction, Position, PowerUpType } from '../types/game.ts';
+import { GameState, Direction, Position, PowerUpType, Difficulty, Settings } from '../types/game.ts';
 import {
   INITIAL_SNAKE,
   generateFood,
@@ -14,33 +14,89 @@ import {
   calculateScore,
   getGameSpeed,
   getOppositeDirection,
-  BASE_SPEED,
   LEVEL_THRESHOLD,
   COMBO_TIME_LIMIT,
-  POWER_UP_DURATION
+  POWER_UP_DURATION,
+  GRID_SIZE
 } from '../utils/gameLogic.ts';
 
 const HIGH_SCORE_KEY = 'snake-high-score';
 const SOUND_ENABLED_KEY = 'snake-sound-enabled';
+const SETTINGS_KEY = 'snake-settings';
+
+const getInitialCanvasDimensions = () => {
+  const isMobile = window.innerWidth < 768;
+  const size = isMobile ? window.innerWidth * 0.9 : 400;
+  return {
+    width: Math.floor(size / GRID_SIZE) * GRID_SIZE,
+    height: Math.floor(size / GRID_SIZE) * GRID_SIZE,
+  };
+};
+
+const getInitialSettings = (): Settings => {
+  const savedSettings = localStorage.getItem(SETTINGS_KEY);
+  if (savedSettings) {
+    return JSON.parse(savedSettings);
+  }
+  return {
+    foodColor: '#ef4444',
+    snakeHeadColor: '#4ade80',
+    snakeBodyColor: '#22c55e',
+  };
+};
 
 export const useSnakeGame = () => {
+  const [difficulty, setDifficultyState] = useState<Difficulty>('Medium');
+  const [canvasDimensions, setCanvasDimensions] = useState(getInitialCanvasDimensions());
+  const [settings, setSettings] = useState<Settings>(getInitialSettings());
+
   const [gameState, setGameState] = useState<GameState>({
     snake: INITIAL_SNAKE,
-    food: generateFood(INITIAL_SNAKE),
+    food: generateFood(INITIAL_SNAKE, canvasDimensions.width, canvasDimensions.height),
     direction: 'RIGHT',
     score: 0,
     gameOver: false,
     gameStarted: false,
     highScore: parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0'),
     level: 1,
-    speed: BASE_SPEED,
+    speed: getGameSpeed(1, null, difficulty),
     powerUps: [],
     activePowerUp: null,
     powerUpEndTime: 0,
     particles: [],
     combo: 0,
-    lastFoodTime: 0
+    lastFoodTime: 0,
+    difficulty: difficulty,
+    canvasWidth: canvasDimensions.width,
+    canvasHeight: canvasDimensions.height,
+    settings: settings,
   });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCanvasDimensions(getInitialCanvasDimensions());
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const setDifficulty = (newDifficulty: Difficulty) => {
+    setDifficultyState(newDifficulty);
+    setGameState(prev => ({
+      ...prev,
+      difficulty: newDifficulty,
+      speed: getGameSpeed(prev.level, prev.activePowerUp, newDifficulty)
+    }));
+  };
+
+  const updateSettings = (newSettings: Settings) => {
+    setSettings(newSettings);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
+    setGameState(prev => ({
+      ...prev,
+      settings: newSettings,
+    }));
+  };
 
   const [soundEnabled, setSoundEnabled] = useState(
     localStorage.getItem(SOUND_ENABLED_KEY) !== 'false'
@@ -86,23 +142,27 @@ export const useSnakeGame = () => {
     const initialSnake = INITIAL_SNAKE;
     setGameState({
       snake: initialSnake,
-      food: generateFood(initialSnake),
+      food: generateFood(initialSnake, canvasDimensions.width, canvasDimensions.height),
       direction: 'RIGHT',
       score: 0,
       gameOver: false,
       gameStarted: false,
       highScore: parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0'),
       level: 1,
-      speed: BASE_SPEED,
+      speed: getGameSpeed(1, null, difficulty),
       powerUps: [],
       activePowerUp: null,
       powerUpEndTime: 0,
       particles: [],
       combo: 0,
-      lastFoodTime: 0
+      lastFoodTime: 0,
+      difficulty: difficulty,
+      canvasWidth: canvasDimensions.width,
+      canvasHeight: canvasDimensions.height,
+      settings: settings,
     });
     directionRef.current = 'RIGHT';
-  }, []);
+  }, [difficulty, canvasDimensions, settings]);
 
   const startGame = useCallback(() => {
     setGameState(prev => ({ ...prev, gameStarted: true }));
@@ -135,7 +195,7 @@ export const useSnakeGame = () => {
       const activePowerUp = currentTime < prevState.powerUpEndTime ? prevState.activePowerUp : null;
 
       // Check collisions
-      if (checkWallCollision(head) || checkSelfCollision(newSnake)) {
+      if (checkWallCollision(head, prevState.canvasWidth, prevState.canvasHeight) || checkSelfCollision(newSnake)) {
         playSound(150, 0.5);
         const newHighScore = Math.max(prevState.score, prevState.highScore);
         if (newHighScore > prevState.highScore) {
@@ -179,7 +239,7 @@ export const useSnakeGame = () => {
         const newLevel = Math.floor(newScore / LEVEL_THRESHOLD) + 1;
         
         const grownSnake = [...newSnake, newSnake[newSnake.length - 1]];
-        const newFood = generateFood(grownSnake);
+        const newFood = generateFood(grownSnake, prevState.canvasWidth, prevState.canvasHeight);
         
         // Handle shrink power-up
         let finalSnake = grownSnake;
@@ -188,7 +248,7 @@ export const useSnakeGame = () => {
         }
         
         // Generate new power-up occasionally
-        const newPowerUp = generatePowerUp(finalSnake, newFood);
+        const newPowerUp = generatePowerUp(finalSnake, newFood, prevState.canvasWidth, prevState.canvasHeight);
         if (newPowerUp) {
           newPowerUps.push(newPowerUp);
         }
@@ -199,7 +259,7 @@ export const useSnakeGame = () => {
           food: newFood,
           score: newScore,
           level: newLevel,
-          speed: getGameSpeed(newLevel, newActivePowerUp, BASE_SPEED),
+          speed: getGameSpeed(newLevel, newActivePowerUp, prevState.difficulty),
           powerUps: newPowerUps,
           activePowerUp: newActivePowerUp,
           powerUpEndTime: newPowerUpEndTime,
@@ -216,7 +276,7 @@ export const useSnakeGame = () => {
         activePowerUp: newActivePowerUp,
         powerUpEndTime: newPowerUpEndTime,
         particles: updatedParticles,
-        speed: getGameSpeed(prevState.level, newActivePowerUp, BASE_SPEED)
+        speed: getGameSpeed(prevState.level, newActivePowerUp, prevState.difficulty)
       };
     });
   }, [playSound]);
@@ -281,6 +341,10 @@ export const useSnakeGame = () => {
     resetGame,
     changeDirection,
     soundEnabled,
-    toggleSound
+    toggleSound,
+    difficulty,
+    setDifficulty,
+    settings,
+    updateSettings,
   };
 }
