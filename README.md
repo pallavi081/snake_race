@@ -1,23 +1,25 @@
 # Responsive Retro Snake Game
 
-A classic snake game built with a modern tech stack, featuring power-ups, a scoring system, and a responsive design for both desktop and mobile devices.
+A classic snake game built with a modern tech stack, featuring power-ups, a scoring system, and a responsive design for both desktop and mobile devices. Now with PWA support!
 
 ## Features
 
 - **Game Modes:** Choose between three different game modes:
     - **Classic Mode:** The timeless snake game experience.
-    - **Puzzle Mode:** Solve challenging puzzles by eating all the food within a limited number of moves.
-    - **Physics Mode (In Progress):** A new challenge with gravity, platforms, and physics-based movement. A basic implementation has been started.
-- **Classic Snake Gameplay:** Enjoy the timeless fun of the snake game.
+    - **Puzzle Mode:** Solve challenging puzzles by eating all the food within a limited number of moves. Includes an **Undo** feature.
+    - **Physics Mode:** A unique challenge with gravity, platforms, jumping mechanics, and physics-based movement.
+- **Progressive Web App (PWA):** Install the game on your device for offline play and a native app-like experience.
+- **Classic Snake Gameplay:** Enjoy the timeless fun of the snake game with **Pause** functionality.
 - **Power-ups:** Spice up the game with exciting power-ups like speed boost, slow motion, double points, and shrink.
 - **Scoring System:** Compete for the high score with a combo and level-based scoring system.
 - **Difficulty Levels:** Choose between Easy, Medium, and Hard difficulty levels.
-- **Sound Effects:** Immersive sound effects for game actions.
+- **Sound Effects & Haptics:** Immersive sound effects and haptic feedback (vibration) on supported devices.
 - **Dark Mode:** Switch between light and dark themes for a comfortable viewing experience.
 - **Responsive Design:** Fully responsive layout for all screen sizes, with a special focus on mobile experience. The game canvas and controls adapt to the screen size for optimal gameplay.
 - **Customizable Colors:** Change the colors of the food and the snake in the settings menu.
 - **How to Play:** A handy guide to get you started with the game rules and controls.
 - **Back Button:** Easily navigate back to the game mode selection screen from any game mode.
+- **Extensive Levels:** Over 50 levels available in Puzzle and Physics modes.
 
 ## Technologies Used
 

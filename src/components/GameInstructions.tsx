@@ -19,6 +19,7 @@ const GameInstructions: React.FC = () => {
           <ul className="text-sm space-y-1 text-gray-300">
             <li>• Arrow keys to move</li>
             <li>• SPACE to start/restart</li>
+            <li>• 'P' or 'ESC' to Pause</li>
           </ul>
         </div>
         

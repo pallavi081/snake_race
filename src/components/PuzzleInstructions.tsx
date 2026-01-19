@@ -9,6 +9,7 @@ const PuzzleInstructions = () => {
         <li>• Use the arrow keys or swipe to move the snake.</li>
         <li>• Avoid hitting walls, obstacles, or yourself.</li>
         <li>• Plan your moves carefully to solve the puzzle.</li>
+        <li>• Made a mistake? Press 'Z', Backspace, or the Undo button.</li>
       </ul>
     </div>
   );
