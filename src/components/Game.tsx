@@ -226,7 +226,7 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
             </div>
 
             {!gameState.gameStarted && !gameState.gameOver && (
-              <div className="flex justify-center mt-6">
+              <div className="flex flex-col items-center gap-3 mt-6">
                 <button
                   onClick={startGame}
                   className="flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-2xl transition-all hover:scale-105 shadow-lg"
@@ -234,6 +234,39 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
                   <Play size={28} fill="currentColor" />
                   Start Game
                 </button>
+
+                {localStorage.getItem('snake-custom-level-classic') && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const saved = localStorage.getItem('snake-custom-level-classic');
+                        if (saved) {
+                          const obs = JSON.parse(saved);
+                          loadCustomLevel(obs);
+                          // Force editing mode off so it plays
+                          setIsEditing(false);
+                          startGame();
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold text-sm shadow-lg"
+                    >
+                      <Save size={16} /> Play Custom Map
+                    </button>
+                    <button
+                      onClick={() => {
+                        localStorage.removeItem('snake-custom-level-classic');
+                        loadCustomLevel([]);
+                        alert("Custom map cleared. Playing standard mode.");
+                        // Force re-render potentially
+                        window.location.reload();
+                      }}
+                      className="px-3 py-2 bg-red-900/50 hover:bg-red-800 text-red-200 rounded-lg text-xs"
+                      title="Clear Custom Map"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

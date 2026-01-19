@@ -12,15 +12,17 @@ A modern, feature-rich Snake game built with React, TypeScript, and Vite. It com
     *   **Power-Ups:** Shield, Magnet, Speed Boost, and Double XP.
 3.  **Puzzle Mode:** specialized challenges with move limits and undo functionality.
 4.  **Physics Mode:** Gravity, jumping, and platforms platformer-style mechanics.
+5.  **Creative Mode (Level Editor):** 🏗️ Design your own custom maps with a drag-and-drop editor. Save and play them!
 
 ### 🏆 Progression & Economy
 *   **Global Leaderboard:** Track high scores across all modes locally.
 *   **Shop System:** Earn coins to unlock **9 Unique Skins** and **6 Visual Themes**.
 *   **Daily Challenges:** 3 new quests every day (e.g., "Get 5 kills") to earn rewards and keep a streak.
 *   **Achievements:** Over 50 unlockable achievements with toast notifications.
-*   **Player Stats:** Comprehensive tracking of kills, win rate, total score, and play time.
+*   **Data Sync:** 💾 Export/Import your save data (coins, skins, stats) to transfer between devices.
 
-### 📱 Mobile Experience
+### 🎥 Advanced Features
+*   **Battle Recording:** Record your gameplay in Battle Royale and download the replay video.
 *   **PWA Support:** Installable as a native app on iOS and Android.
 *   **Touch Controls:** Optimized swipe gestures for smooth movement.
 *   **Responsive UI:** all menus, modals, and game canvases scale perfectly to phone screens.

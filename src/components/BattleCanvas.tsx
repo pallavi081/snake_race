@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { Video, StopCircle, Download } from 'lucide-react';
 import { BattleGameState, PowerUpType } from './useBattleGame';
 import { Theme } from '../data/skins';
 
@@ -31,6 +32,65 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
 
   // Viewport settings - show only area around player
   const [viewportSize, setViewportSize] = useState({ width: 400, height: 300 });
+
+  // Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startRecording = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    try {
+      const stream = canvas.captureStream(30); // 30 FPS
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks((prev) => [...prev, event.data]);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setRecordedChunks([]); // Clear previous
+
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+    } catch (e) {
+      console.error("Recording failed:", e);
+      alert("Screen recording not supported in this browser.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const downloadRecording = () => {
+    if (recordedChunks.length === 0) return;
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    document.body.appendChild(a);
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `snake-battle-${new Date().toISOString().slice(0, 10)}.webm`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    setRecordedChunks([]); // Clear after download
+  };
 
   // Responsive viewport - fill as much screen as possible
   useEffect(() => {
@@ -261,7 +321,28 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
   return (
     <div className="flex flex-col items-center w-full" ref={containerRef}>
       {/* Main viewport canvas */}
-      <div className="relative">
+      <div className="relative group">
+
+        {/* Recording Controls (Hover or Active) */}
+        <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+          {recordedChunks.length > 0 && !isRecording && (
+            <button
+              onClick={downloadRecording}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg animate-bounce"
+            >
+              <Download size={14} /> Download Replay
+            </button>
+          )}
+
+          <button
+            onClick={isRecording ? stopRecording : startRecording}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transition-all ${isRecording ? 'bg-red-600 text-white animate-pulse' : 'bg-gray-900/80 text-gray-300 hover:bg-gray-800'
+              }`}
+          >
+            {isRecording ? <><StopCircle size={14} /> REC {recordingTime}s</> : <><Video size={14} /> Record Game</>}
+          </button>
+        </div>
+
         <canvas
           ref={canvasRef}
           width={viewportSize.width}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar } from 'lucide-react';
+import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings } from 'lucide-react';
 import GameInstructions from './GameInstructions';
 import Leaderboard from './Leaderboard';
 import Shop from './Shop';
 import Achievements from './Achievements';
 import DailyChallenges from './DailyChallenges';
+import DataSync from './DataSync';
 import { storage } from '../utils/storage';
 
 interface GameModeSelectionProps {
@@ -17,6 +18,7 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
   const [showShop, setShowShop] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
+  const [showDataSync, setShowDataSync] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [player, setPlayer] = useState(storage.getPlayer());
 
@@ -82,6 +84,13 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             >
               <ShoppingBag size={18} className="text-green-400" />
             </button>
+            <button
+              onClick={() => setShowDataSync(true)}
+              className="p-2 bg-gray-600/20 hover:bg-gray-600/40 rounded-lg transition-all"
+              title="Settings & Data"
+            >
+              <Settings size={18} className="text-gray-400" />
+            </button>
           </div>
         </div>
       </div>
@@ -135,6 +144,14 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <Swords size={32} className="text-red-500 mb-2 mx-auto md:mx-0" />
             <h2 className="text-lg md:text-xl font-bold text-center md:text-left">Battle</h2>
             <p className="text-gray-400 text-xs md:text-sm hidden md:block mt-2">Multiplayer battle royale</p>
+          </div>
+
+          <div className="p-4 md:p-6 rounded-xl border-2 border-gray-700 hover:border-purple-500 bg-gray-800 cursor-pointer hover:scale-105 transition-all" onClick={() => onSelectMode('creative' as any)}>
+            <div className="text-purple-500 mb-2 mx-auto md:mx-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>
+            </div>
+            <h2 className="text-lg md:text-xl font-bold text-center md:text-left">Creative</h2>
+            <p className="text-gray-400 text-xs md:text-sm hidden md:block mt-2">Build & Play Custom Maps</p>
           </div>
         </div>
 
@@ -227,6 +244,7 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
       {showShop && <Shop onClose={() => { setShowShop(false); refreshPlayer(); }} onPurchase={refreshPlayer} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showDailyChallenges && <DailyChallenges onClose={() => setShowDailyChallenges(false)} />}
+      {showDataSync && <DataSync onClose={() => setShowDataSync(false)} onImport={refreshPlayer} />}
     </div>
   );
 };

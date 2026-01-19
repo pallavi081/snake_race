@@ -3,16 +3,14 @@ import Game from './components/Game.tsx';
 import GameModeSelection from './components/GameModeSelection.tsx';
 import PuzzleGame from './components/PuzzleGame.tsx';
 import PhysicsGame from './components/PhysicsGame.tsx';
+import LevelEditor from './components/LevelEditor.tsx';
 import BattleGame from './components/BattleGame.tsx';
 
-type GameMode = 'classic' | 'puzzle' | 'physics' | 'battle' | null;
+type GameMode = 'classic' | 'puzzle' | 'physics' | 'battle' | 'creative' | null;
 
 function App() {
   const [gameMode, setGameMode] = useState<GameMode>(null);
-
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+  // ... (keep useEffect)
 
   const renderGameMode = () => {
     switch (gameMode) {
@@ -24,7 +22,10 @@ function App() {
         return <PhysicsGame onBack={() => setGameMode(null)} />;
       case 'battle':
         return <BattleGame onBack={() => setGameMode(null)} />;
+      case 'creative':
+        return <LevelEditor onBack={() => setGameMode(null)} onPlay={() => setGameMode('classic')} />;
       default:
+        // @ts-ignore - string compatibility
         return <GameModeSelection onSelectMode={setGameMode} />;
     }
   };

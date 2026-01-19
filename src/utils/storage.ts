@@ -170,6 +170,41 @@ export const storage = {
             storage.savePlayer({ currentStreak: 1, lastPlayDate: today });
         }
     },
+
+    // Data Export/Import
+    exportData: (): string => {
+        const data = {
+            player: localStorage.getItem(STORAGE_KEYS.PLAYER_DATA),
+            leaderboard: localStorage.getItem(STORAGE_KEYS.LEADERBOARD),
+            achievements: localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS),
+            daily: localStorage.getItem(STORAGE_KEYS.DAILY_CHALLENGES),
+            shop: localStorage.getItem(STORAGE_KEYS.SHOP),
+            settings: localStorage.getItem(STORAGE_KEYS.SETTINGS),
+            version: '1.0'
+        };
+        return btoa(JSON.stringify(data));
+    },
+
+    importData: (encodedData: string): boolean => {
+        try {
+            const json = atob(encodedData);
+            const data = JSON.parse(json);
+
+            if (!data.version) return false;
+
+            if (data.player) localStorage.setItem(STORAGE_KEYS.PLAYER_DATA, data.player);
+            if (data.leaderboard) localStorage.setItem(STORAGE_KEYS.LEADERBOARD, data.leaderboard);
+            if (data.achievements) localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, data.achievements);
+            if (data.daily) localStorage.setItem(STORAGE_KEYS.DAILY_CHALLENGES, data.daily);
+            if (data.shop) localStorage.setItem(STORAGE_KEYS.SHOP, data.shop);
+            if (data.settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, data.settings);
+
+            return true;
+        } catch (e) {
+            console.error('Failed to import data:', e);
+            return false;
+        }
+    }
 };
 
 export default storage;
