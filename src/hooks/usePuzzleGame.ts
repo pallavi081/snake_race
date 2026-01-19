@@ -162,6 +162,7 @@ export const usePuzzleGame = () => {
       setGameState(prev => ({...prev, isLevelComplete: true}));
     }
   }, [currentLevelIndex]);
+<<<<<<< HEAD
 
   const loadCustomLevel = useCallback((level: PuzzleLevel) => {
     setGameState({
@@ -176,6 +177,8 @@ export const usePuzzleGame = () => {
       history: [],
     });
   }, []);
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   
   // This hook is for keyboard controls
   useEffect(() => {
@@ -199,6 +202,9 @@ export const usePuzzleGame = () => {
     restartLevel,
     goToNextLevel,
     undo,
+<<<<<<< HEAD
     loadCustomLevel,
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   };
 };

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+<<<<<<< HEAD
 import { ArrowLeft, ChevronLeft, ChevronRight, HelpCircle, ArrowUp, Play, Box, Circle, Save } from 'lucide-react';
 import { usePhysicsGame } from '../hooks/usePhysicsGame';
 import PhysicsCanvas from './PhysicsCanvas';
@@ -70,6 +71,20 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
     setIsEditing(false);
     startGame();
   };
+=======
+import { ArrowLeft, ChevronLeft, ChevronRight, HelpCircle, ArrowUp, Play } from 'lucide-react';
+import { usePhysicsGame } from '../hooks/usePhysicsGame';
+import PhysicsCanvas from './PhysicsCanvas';
+import PhysicsInstructions from './PhysicsInstructions';
+
+interface PhysicsGameProps {
+  onBack: () => void;
+}
+
+const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack }) => {
+  const { gameState, moveHorizontal, stopHorizontal, jump, startGame } = usePhysicsGame();
+  const [showInstructions, setShowInstructions] = useState(false);
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -89,6 +104,7 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
   }, [moveHorizontal, stopHorizontal, jump]);
 
   return (
+<<<<<<< HEAD
     <div className={`flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 ${gameState.gameStarted && !isEditing ? 'cursor-none' : ''}`}>
       {isEditing ? (
         <div className="flex flex-col items-center w-full max-w-md">
@@ -145,6 +161,10 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
           </div>
         </div>
       ) : !gameState.gameStarted && (
+=======
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900">
+      {!gameState.gameStarted && (
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         <div className="flex flex-col items-center w-full max-w-md mb-8">
           <div className="flex items-center justify-between w-full mb-8">
             <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white">
@@ -166,7 +186,11 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
         </div>
       )}
       
+<<<<<<< HEAD
       {!isEditing && gameState.gameStarted && (
+=======
+      {gameState.gameStarted && (
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         <div className="relative">
           <button onClick={onBack} className="absolute top-4 left-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 z-10">
             <ArrowLeft size={24} />
@@ -176,7 +200,10 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
       )}
 
       {/* Mobile Controls */}
+<<<<<<< HEAD
       {!isEditing && (
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
       <div className="flex items-center gap-4 mt-6 md:hidden w-full max-w-md justify-center">
         <button 
           className="p-6 rounded-full bg-gray-700 bg-opacity-50 text-white active:bg-gray-600"
@@ -202,7 +229,10 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
           <ChevronRight size={32} />
         </button>
       </div>
+<<<<<<< HEAD
       )}
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
       {showInstructions && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -228,7 +258,11 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
       {gameState.isLevelFailed && (
         <div className="absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center text-white z-40">
           <h2 className="text-4xl font-bold mb-4 text-red-500">Level Failed</h2>
+<<<<<<< HEAD
           <button onClick={resetLevel} className="px-6 py-3 bg-gray-700 rounded-lg">Try Again</button>
+=======
+          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-gray-700 rounded-lg">Try Again</button>
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         </div>
       )}
     </div>

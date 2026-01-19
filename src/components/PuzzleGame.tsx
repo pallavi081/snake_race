@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { usePuzzleGame } from '../hooks/usePuzzleGame.ts';
 import PuzzleCanvas from './PuzzleCanvas.tsx';
@@ -67,6 +68,24 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
     setIsEditing(false);
     setHasStarted(true);
   };
+=======
+import React, { useState } from 'react';
+import { usePuzzleGame } from '../hooks/usePuzzleGame.ts';
+import PuzzleCanvas from './PuzzleCanvas.tsx';
+import SwipeControls from './SwipeControls.tsx';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, HelpCircle, Play, RotateCcw } from 'lucide-react';
+import { Direction } from '../types/game.ts';
+import PuzzleInstructions from './PuzzleInstructions.tsx';
+
+interface PuzzleGameProps {
+  onBack: () => void;
+}
+
+const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
+  const { gameState, changeDirection, moveSnakeAndCheck, restartLevel, goToNextLevel, undo } = usePuzzleGame();
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
   const handleSwipe = (direction: Direction) => {
     changeDirection(direction);
@@ -77,6 +96,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
 
   return (
     <SwipeControls onSwipe={handleSwipe}>
+<<<<<<< HEAD
       <div className={`flex flex-col items-center justify-center min-h-screen p-4 ${hasStarted && !isEditing ? 'cursor-none' : ''}`}>
         {isEditing ? (
           <div className="flex flex-col items-center w-full max-w-md">
@@ -136,6 +156,10 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
             </div>
           </div>
         ) : !hasStarted ? (
+=======
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        {!hasStarted ? (
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
           <div className="flex flex-col items-center w-full max-w-md mb-8">
             <div className="flex items-center justify-between w-full mb-8">
               <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white">
@@ -171,8 +195,12 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
           </>
         )}
 
+<<<<<<< HEAD
         {/* On-screen buttons for mobile - Only show when playing */}
         {!isEditing && (
+=======
+        {/* On-screen buttons for mobile */}
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         <div className="grid grid-cols-3 gap-3 mt-4 md:hidden">
           <div></div>
           <button className={buttonClass} onClick={() => handleSwipe('UP')}><ChevronUp size={32} /></button>
@@ -184,7 +212,10 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
           <button className={buttonClass} onClick={() => handleSwipe('DOWN')}><ChevronDown size={32} /></button>
           <div></div>
         </div>
+<<<<<<< HEAD
         )}
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
         {showInstructions && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

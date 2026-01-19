@@ -178,6 +178,7 @@ export const usePhysicsGame = () => {
     return () => clearInterval(loop);
   }, [gameLoop]);
 
+<<<<<<< HEAD
   const loadCustomLevel = useCallback((level: PhysicsLevel) => {
     setGameState({
       currentLevelIndex: -1,
@@ -191,12 +192,18 @@ export const usePhysicsGame = () => {
     });
   }, []);
 
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   return {
     gameState,
     moveHorizontal,
     stopHorizontal,
     jump,
+<<<<<<< HEAD
     startGame,
     loadCustomLevel
+=======
+    startGame
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   };
 };

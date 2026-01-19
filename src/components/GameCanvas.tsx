@@ -4,8 +4,11 @@ import { GRID_SIZE } from '../utils/gameLogic.ts';
 
 interface GameCanvasProps {
   gameState: GameState;
+<<<<<<< HEAD
   onStart?: () => void;
   onRestart?: () => void;
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 }
 
 const getPowerUpColor = (type: PowerUpType) => {
@@ -28,7 +31,11 @@ const getPowerUpSymbol = (type: PowerUpType) => {
   return symbols[type];
 };
 
+<<<<<<< HEAD
 const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }) => {
+=======
+const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { canvasWidth, canvasHeight, settings } = gameState;
 
@@ -141,16 +148,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }
       />
       
       {!gameState.gameStarted && !gameState.gameOver && (
+<<<<<<< HEAD
         <div 
           className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
           onClick={onStart}
         >
           <p className="text-white text-xl font-bold mb-2">Snake Game</p>
           <p className="text-white text-sm">Press SPACE or Tap to start</p>
+=======
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg">
+          <p className="text-white text-xl font-bold mb-2">Snake Game</p>
+          <p className="text-white text-sm">Press SPACE to start</p>
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         </div>
       )}
       
       {gameState.gameOver && (
+<<<<<<< HEAD
         <div 
           className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
           onClick={onRestart}
@@ -159,6 +173,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }
           <p className="text-white text-lg mb-2">Score: {gameState.score}</p>
           <p className="text-white text-md mb-2">Level: {gameState.level}</p>
           <p className="text-white text-sm">Press SPACE or Tap to restart</p>
+=======
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg">
+          <p className="text-white text-2xl font-bold mb-2">Game Over!</p>
+          <p className="text-white text-lg mb-2">Score: {gameState.score}</p>
+          <p className="text-white text-md mb-2">Level: {gameState.level}</p>
+          <p className="text-white text-sm">Press SPACE to restart</p>
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         </div>
       )}
       

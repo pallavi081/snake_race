@@ -31,8 +31,13 @@ const GameInstructions: React.FC = () => {
             </span>
           </div>
           <ul className="text-sm space-y-1 text-gray-300">
+<<<<<<< HEAD
             <li>• Swipe to move</li>
             <li>• Tap screen to start/restart</li>
+=======
+            <li>• Touch direction buttons</li>
+            <li>• Tap start/restart buttons</li>
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
           </ul>
         </div>
       </div>

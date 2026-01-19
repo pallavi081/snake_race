@@ -22,12 +22,20 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
+<<<<<<< HEAD
             src: '/snake.png',
+=======
+            src: 'pwa-192x192.png',
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
             sizes: '192x192',
             type: 'image/png'
           },
           {
+<<<<<<< HEAD
             src: '/snake.png',
+=======
+            src: 'pwa-512x512.png',
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
             sizes: '512x512',
             type: 'image/png'
           }

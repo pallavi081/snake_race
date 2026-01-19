@@ -50,7 +50,10 @@ export const useSnakeGame = () => {
   const [canvasDimensions, setCanvasDimensions] = useState(getInitialCanvasDimensions());
   const [settings, setSettings] = useState<Settings>(getInitialSettings());
   const [isPaused, setIsPaused] = useState(false);
+<<<<<<< HEAD
   const [customObstacles, setCustomObstacles] = useState<Position[]>([]);
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
   const [gameState, setGameState] = useState<GameState>({
     snake: INITIAL_SNAKE,
@@ -100,10 +103,13 @@ export const useSnakeGame = () => {
     }));
   };
 
+<<<<<<< HEAD
   const loadCustomLevel = useCallback((obstacles: Position[]) => {
     setCustomObstacles(obstacles);
   }, []);
 
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   const { soundEnabled, toggleSound, playSound } = useSound();
 
   const gameLoopRef = useRef<NodeJS.Timeout>();
@@ -174,9 +180,13 @@ export const useSnakeGame = () => {
       const activePowerUp = currentTime < prevState.powerUpEndTime ? prevState.activePowerUp : null;
 
       // Check collisions
+<<<<<<< HEAD
       const hitObstacle = customObstacles.some(obs => obs.x === head.x && obs.y === head.y);
       
       if (checkWallCollision(head, prevState.canvasWidth, prevState.canvasHeight) || checkSelfCollision(newSnake) || hitObstacle) {
+=======
+      if (checkWallCollision(head, prevState.canvasWidth, prevState.canvasHeight) || checkSelfCollision(newSnake)) {
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         playSound(150, 0.5);
         if (navigator.vibrate) navigator.vibrate(200);
         const newHighScore = Math.max(prevState.score, prevState.highScore);
@@ -262,7 +272,11 @@ export const useSnakeGame = () => {
         speed: getGameSpeed(prevState.level, newActivePowerUp, prevState.difficulty)
       };
     });
+<<<<<<< HEAD
   }, [playSound, customObstacles]);
+=======
+  }, [playSound]);
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
   useEffect(() => {
     if (gameState.gameStarted && !gameState.gameOver && !isPaused) {
@@ -336,6 +350,9 @@ export const useSnakeGame = () => {
     updateSettings,
     isPaused,
     togglePause,
+<<<<<<< HEAD
     loadCustomLevel,
+=======
+>>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   };
 }
