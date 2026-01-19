@@ -103,11 +103,12 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
 
   const mySnake = gameState.snakes.find(s => s.id === gameState.myId);
 
-  if (!gameState.isConnected) {
+  // Only show connecting screen when actually connecting
+  if (gameState.connectionStatus === 'connecting') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900">
         <Loader2 size={40} className="animate-spin text-blue-500 mb-4" />
-        <p className="text-white">Connecting...</p>
+        <p className="text-white">Connecting to room...</p>
       </div>
     );
   }
