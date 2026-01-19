@@ -63,7 +63,6 @@ const BOARD_WIDTH = 1200;
 const BOARD_HEIGHT = 900;
 const INITIAL_SNAKE_LENGTH = 5;
 const POWER_UP_TYPES: PowerUpType[] = ['speed', 'shield', 'doubleXp', 'magnet', 'bomb'];
-const POWER_UP_TYPES: PowerUpType[] = ['speed', 'shield', 'doubleXp', 'magnet', 'bomb'];
 
 export const SNAKE_COLORS = [
   { name: 'Green', color: '#22c55e' },
