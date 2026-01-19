@@ -341,7 +341,7 @@ export const useBattleGame = () => {
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting', roomId, myId }));
 
     const peer = new Peer(myId, {
-      debug: 1,
+      debug: 2, // More verbose logging
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -354,16 +354,23 @@ export const useBattleGame = () => {
 
     peer.on('open', () => {
       console.log('🎮 Client peer opened, connecting to host...');
-      const conn = peer.connect(`snake-${roomId}`, { reliable: true });
-      setupConnection(conn);
+      const hostPeerId = `snake-${roomId}`;
+      console.log('🔗 Connecting to host peer:', hostPeerId);
+
+      const conn = peer.connect(hostPeerId, { reliable: true });
 
       conn.on('open', () => {
-        // Send join message to host
-        conn.send({
+        console.log('✅ Connection to host opened!');
+        connectionsRef.current.set(conn.peer, conn);
+
+        // Send join message
+        const joinMsg = {
           type: 'JOIN',
           payload: { name: playerName, color: playerColor, peerId: myId },
           senderId: myId
-        });
+        };
+        console.log('📤 Sending JOIN:', joinMsg);
+        conn.send(joinMsg);
 
         setGameState(prev => ({
           ...prev,
@@ -372,6 +379,19 @@ export const useBattleGame = () => {
           connectionStatus: 'connected'
         }));
       });
+
+      conn.on('data', (data) => {
+        console.log('📨 Received from host:', data);
+        handleMessage(data as PeerMessage);
+      });
+
+      conn.on('close', () => {
+        console.log('🚪 Connection closed');
+        connectionsRef.current.delete(conn.peer);
+        setGameState(prev => ({ ...prev, isConnected: false, connectionStatus: 'disconnected' }));
+      });
+
+      conn.on('error', (err) => console.error('❌ Conn error:', err));
     });
 
     peer.on('error', (err) => {
@@ -381,7 +401,7 @@ export const useBattleGame = () => {
       }
       setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
     });
-  }, [setupConnection]);
+  }, [handleMessage]);
 
   // Start game (host only)
   const startGame = useCallback(() => {
