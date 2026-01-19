@@ -3,7 +3,7 @@ import { Keyboard, Smartphone, Zap, Award } from 'lucide-react';
 
 const GameInstructions: React.FC = () => {
   return (
-    <div className="mt-6 p-4 rounded-lg bg-gray-800 border border-gray-700">
+    <div className="p-4 rounded-lg bg-gray-800 border border-gray-700">
       <h3 className="font-bold mb-3 text-white">
         How to Play
       </h3>

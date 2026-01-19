@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSound } from './useSound';
 import { GameState, Direction, Position, PowerUpType, Difficulty, Settings } from '../types/game.ts';
 import {
   INITIAL_SNAKE,
@@ -21,7 +22,6 @@ import {
 } from '../utils/gameLogic.ts';
 
 const HIGH_SCORE_KEY = 'snake-high-score';
-const SOUND_ENABLED_KEY = 'snake-sound-enabled';
 const SETTINGS_KEY = 'snake-settings';
 
 const getInitialCanvasDimensions = () => {
@@ -49,6 +49,7 @@ export const useSnakeGame = () => {
   const [difficulty, setDifficultyState] = useState<Difficulty>('Medium');
   const [canvasDimensions, setCanvasDimensions] = useState(getInitialCanvasDimensions());
   const [settings, setSettings] = useState<Settings>(getInitialSettings());
+  const [isPaused, setIsPaused] = useState(false);
 
   const [gameState, setGameState] = useState<GameState>({
     snake: INITIAL_SNAKE,
@@ -98,45 +99,16 @@ export const useSnakeGame = () => {
     }));
   };
 
-  const [soundEnabled, setSoundEnabled] = useState(
-    localStorage.getItem(SOUND_ENABLED_KEY) !== 'false'
-  );
+  const { soundEnabled, toggleSound, playSound } = useSound();
 
   const gameLoopRef = useRef<NodeJS.Timeout>();
   const directionRef = useRef<Direction>('RIGHT');
-  const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Initialize audio context
-  useEffect(() => {
-    if (soundEnabled && !audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const togglePause = useCallback(() => {
+    if (gameState.gameStarted && !gameState.gameOver) {
+      setIsPaused(prev => !prev);
     }
-  }, [soundEnabled]);
-
-  const playSound = useCallback((frequency: number, duration: number, type: OscillatorType = 'square') => {
-    if (!soundEnabled || !audioContextRef.current) return;
-    
-    const oscillator = audioContextRef.current.createOscillator();
-    const gainNode = audioContextRef.current.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContextRef.current.destination);
-    
-    oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
-    oscillator.type = type;
-    
-    gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + duration);
-    
-    oscillator.start(audioContextRef.current.currentTime);
-    oscillator.stop(audioContextRef.current.currentTime + duration);
-  }, [soundEnabled]);
-
-  const toggleSound = useCallback(() => {
-    const newSoundEnabled = !soundEnabled;
-    setSoundEnabled(newSoundEnabled);
-    localStorage.setItem(SOUND_ENABLED_KEY, newSoundEnabled.toString());
-  }, [soundEnabled]);
+  }, [gameState.gameStarted, gameState.gameOver]);
 
   const resetGame = useCallback(() => {
     const initialSnake = INITIAL_SNAKE;
@@ -162,10 +134,12 @@ export const useSnakeGame = () => {
       settings: settings,
     });
     directionRef.current = 'RIGHT';
+    setIsPaused(false);
   }, [difficulty, canvasDimensions, settings]);
 
   const startGame = useCallback(() => {
     setGameState(prev => ({ ...prev, gameStarted: true }));
+    setIsPaused(false);
   }, []);
 
   const changeDirection = useCallback((newDirection: Direction) => {
@@ -197,6 +171,7 @@ export const useSnakeGame = () => {
       // Check collisions
       if (checkWallCollision(head, prevState.canvasWidth, prevState.canvasHeight) || checkSelfCollision(newSnake)) {
         playSound(150, 0.5);
+        if (navigator.vibrate) navigator.vibrate(200);
         const newHighScore = Math.max(prevState.score, prevState.highScore);
         if (newHighScore > prevState.highScore) {
           localStorage.setItem(HIGH_SCORE_KEY, newHighScore.toString());
@@ -225,6 +200,7 @@ export const useSnakeGame = () => {
       // Check food collision
       if (checkFoodCollision(head, prevState.food)) {
         playSound(440, 0.1);
+        if (navigator.vibrate) navigator.vibrate(50);
         
         // Calculate combo
         const timeSinceLastFood = currentTime - prevState.lastFoodTime;
@@ -282,7 +258,7 @@ export const useSnakeGame = () => {
   }, [playSound]);
 
   useEffect(() => {
-    if (gameState.gameStarted && !gameState.gameOver) {
+    if (gameState.gameStarted && !gameState.gameOver && !isPaused) {
       gameLoopRef.current = setInterval(gameLoop, gameState.speed);
     } else {
       if (gameLoopRef.current) {
@@ -295,7 +271,7 @@ export const useSnakeGame = () => {
         clearInterval(gameLoopRef.current);
       }
     };
-  }, [gameLoop, gameState.gameStarted, gameState.gameOver, gameState.speed]);
+  }, [gameLoop, gameState.gameStarted, gameState.gameOver, gameState.speed, isPaused]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -311,7 +287,12 @@ export const useSnakeGame = () => {
 
       if (!gameState.gameStarted || gameState.gameOver) return;
 
-      switch (e.key) {
+      if (e.code === 'Escape' || e.code === 'KeyP') {
+        togglePause();
+        return;
+      }
+
+      if (!isPaused) switch (e.key) {
         case 'ArrowUp':
           e.preventDefault();
           changeDirection('UP');
@@ -333,7 +314,7 @@ export const useSnakeGame = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState.gameStarted, gameState.gameOver, changeDirection, startGame, resetGame]);
+  }, [gameState.gameStarted, gameState.gameOver, changeDirection, startGame, resetGame, isPaused, togglePause]);
 
   return {
     gameState,
@@ -346,5 +327,7 @@ export const useSnakeGame = () => {
     setDifficulty,
     settings,
     updateSettings,
+    isPaused,
+    togglePause,
   };
 }

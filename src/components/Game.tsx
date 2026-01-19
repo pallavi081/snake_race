@@ -7,7 +7,7 @@ import GameInstructions from './GameInstructions';
 import SoundToggle from './SoundToggle';
 import PowerUpInfo from './PowerUpInfo';
 import Settings from './Settings.tsx';
-import { HelpCircle, Settings as SettingsIcon, ArrowLeft } from 'lucide-react';
+import { HelpCircle, Settings as SettingsIcon, ArrowLeft, Play, Pause } from 'lucide-react';
 import { Difficulty } from '../types/game.ts';
 
 interface GameProps {
@@ -20,7 +20,7 @@ interface GameProps {
 
 const Game: React.FC<GameProps> = ({ onBack }) => {
 
-  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound, difficulty, setDifficulty, settings, updateSettings } = useSnakeGame();
+  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound, difficulty, setDifficulty, settings, updateSettings, isPaused, togglePause } = useSnakeGame();
 
   const [showInstructions, setShowInstructions] = useState(false);
 
@@ -46,6 +46,7 @@ const Game: React.FC<GameProps> = ({ onBack }) => {
 
       <div className="w-full sm:max-w-md h-full sm:h-auto flex flex-col">
 
+        {!gameState.gameStarted && (
         <div className="p-4">
 
           <div className="flex items-center justify-between mb-2">
@@ -165,13 +166,36 @@ const Game: React.FC<GameProps> = ({ onBack }) => {
             powerUpEndTime={gameState.powerUpEndTime}
 
           />
+          
+          <div className="flex justify-center mt-4">
+            <button 
+              onClick={startGame}
+              className="flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-2xl transition-all hover:scale-105 shadow-lg"
+            >
+              <Play size={28} fill="currentColor" />
+              Start Game
+            </button>
+          </div>
 
         </div>
+        )}
 
         
 
         <div className="flex-grow flex items-center justify-center">
 
+          {gameState.gameStarted && (
+            <>
+              <button onClick={onBack} className="absolute top-4 left-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 z-10">
+                <ArrowLeft size={24} />
+              </button>
+              {!gameState.gameOver && (
+                <button onClick={togglePause} className="absolute top-4 right-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 z-10">
+                  {isPaused ? <Play size={24} /> : <Pause size={24} />}
+                </button>
+              )}
+            </>
+          )}
           <GameCanvas gameState={gameState} />
 
         </div>
@@ -192,6 +216,13 @@ const Game: React.FC<GameProps> = ({ onBack }) => {
 
         />
 
+        {isPaused && !gameState.gameOver && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 backdrop-blur-sm">
+            <div className="text-white text-4xl font-bold tracking-wider">
+              PAUSED
+            </div>
+          </div>
+        )}
         
 
         {showInstructions && (

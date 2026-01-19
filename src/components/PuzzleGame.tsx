@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { usePuzzleGame } from '../hooks/usePuzzleGame.ts';
 import PuzzleCanvas from './PuzzleCanvas.tsx';
 import SwipeControls from './SwipeControls.tsx';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, HelpCircle } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, HelpCircle, Play, RotateCcw } from 'lucide-react';
 import { Direction } from '../types/game.ts';
 import PuzzleInstructions from './PuzzleInstructions.tsx';
 
@@ -11,8 +11,9 @@ interface PuzzleGameProps {
 }
 
 const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
-  const { gameState, changeDirection, moveSnakeAndCheck, restartLevel, goToNextLevel } = usePuzzleGame();
+  const { gameState, changeDirection, moveSnakeAndCheck, restartLevel, goToNextLevel, undo } = usePuzzleGame();
   const [showInstructions, setShowInstructions] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const handleSwipe = (direction: Direction) => {
     changeDirection(direction);
@@ -24,24 +25,41 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
   return (
     <SwipeControls onSwipe={handleSwipe}>
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="flex items-center justify-between w-full max-w-md mb-4">
-          <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-3xl font-bold text-center text-white">Puzzle Mode</h1>
-          <button onClick={() => setShowInstructions(true)} className="p-2 rounded-full hover:bg-gray-700 text-white">
-            <HelpCircle size={20} />
-          </button>
-        </div>
-        <div className="flex justify-between w-full max-w-md mb-4 text-white">
-          <span>Level: {gameState.currentLevelIndex + 1}</span>
-          <span>Moves Left: {gameState.movesLeft}</span>
-        </div>
-        <PuzzleCanvas 
-          level={gameState.level} 
-          snake={gameState.snake} 
-          food={gameState.food} 
-        />
+        {!hasStarted ? (
+          <div className="flex flex-col items-center w-full max-w-md mb-8">
+            <div className="flex items-center justify-between w-full mb-8">
+              <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white">
+                <ArrowLeft size={24} />
+              </button>
+              <h1 className="text-3xl font-bold text-center text-white">Puzzle Mode</h1>
+              <button onClick={() => setShowInstructions(true)} className="p-2 rounded-full hover:bg-gray-700 text-white">
+                <HelpCircle size={24} />
+              </button>
+            </div>
+            <button 
+              onClick={() => setHasStarted(true)}
+              className="flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-2xl transition-all hover:scale-105 shadow-lg"
+            >
+              <Play size={28} fill="currentColor" />
+              Start Game
+            </button>
+          </div>
+        ) : (
+          <>
+            <button onClick={onBack} className="absolute top-4 left-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 z-10">
+              <ArrowLeft size={24} />
+            </button>
+            <div className="flex justify-between w-full max-w-md mb-4 text-white">
+              <span>Level: {gameState.currentLevelIndex + 1}</span>
+              <span>Moves Left: {gameState.movesLeft}</span>
+            </div>
+            <PuzzleCanvas 
+              level={gameState.level} 
+              snake={gameState.snake} 
+              food={gameState.food} 
+            />
+          </>
+        )}
 
         {/* On-screen buttons for mobile */}
         <div className="grid grid-cols-3 gap-3 mt-4 md:hidden">

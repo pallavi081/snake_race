@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSound } from './useSound';
 import { puzzleLevels, PuzzleLevel } from '../levels.ts';
 import { Position, Direction } from '../types/game';
 import { getOppositeDirection } from '../utils/gameLogic.ts';
@@ -12,6 +13,7 @@ interface PuzzleGameState {
   isLevelComplete: boolean;
   isLevelFailed: boolean;
   direction: Direction;
+  history: Omit<PuzzleGameState, 'history'>[];
 }
 
 export const usePuzzleGame = () => {
@@ -27,8 +29,11 @@ export const usePuzzleGame = () => {
       isLevelComplete: false,
       isLevelFailed: false,
       direction: 'RIGHT',
+      history: [],
     };
   });
+
+  const { playSound } = useSound();
 
   const changeDirection = (newDirection: Direction) => {
     if (getOppositeDirection(gameState.direction) !== newDirection) {
@@ -42,6 +47,10 @@ export const usePuzzleGame = () => {
         return prev;
       }
 
+      // Create snapshot for history (excluding history itself)
+      const { history, ...currentState } = prev;
+      const newHistory = [...history, currentState];
+
       const newSnake = [...prev.snake];
       const head = { ...newSnake[0] };
 
@@ -54,16 +63,22 @@ export const usePuzzleGame = () => {
 
       // Check wall collision
       if (head.x < 0 || head.x >= prev.level.gridSize || head.y < 0 || head.y >= prev.level.gridSize) {
+        playSound(150, 0.3, 'sawtooth');
+        if (navigator.vibrate) navigator.vibrate(200);
         return { ...prev, isLevelFailed: true };
       }
 
       // Check obstacle collision
       if (prev.level.obstaclePositions.some(obs => obs.x === head.x && obs.y === head.y)) {
+        playSound(150, 0.3, 'sawtooth');
+        if (navigator.vibrate) navigator.vibrate(200);
         return { ...prev, isLevelFailed: true };
       }
 
       // Check self collision
       if (newSnake.some(seg => seg.x === head.x && seg.y === head.y)) {
+        playSound(150, 0.3, 'sawtooth');
+        if (navigator.vibrate) navigator.vibrate(200);
         return { ...prev, isLevelFailed: true };
       }
       
@@ -74,6 +89,8 @@ export const usePuzzleGame = () => {
       let newFood = [...prev.food];
       if (foodIndex > -1) {
         newFood.splice(foodIndex, 1);
+        playSound(440, 0.1, 'square');
+        if (navigator.vibrate) navigator.vibrate(50);
       } else {
         newSnake.pop();
       }
@@ -89,7 +106,19 @@ export const usePuzzleGame = () => {
         movesLeft,
         isLevelComplete,
         isLevelFailed,
+        history: newHistory,
       };
+    });
+  }, []);
+
+  const undo = useCallback(() => {
+    setGameState(prev => {
+      if (prev.history.length === 0 || prev.isLevelComplete || prev.isLevelFailed) return prev;
+      
+      const previousState = prev.history[prev.history.length - 1];
+      const newHistory = prev.history.slice(0, -1);
+      
+      return { ...previousState, history: newHistory };
     });
   }, []);
 
@@ -105,6 +134,7 @@ export const usePuzzleGame = () => {
         isLevelComplete: false,
         isLevelFailed: false,
         direction: 'RIGHT',
+        history: [],
       };
     });
   }, [currentLevelIndex]);
@@ -124,6 +154,7 @@ export const usePuzzleGame = () => {
           isLevelComplete: false,
           isLevelFailed: false,
           direction: 'RIGHT',
+          history: [],
         };
       });
     } else {
@@ -140,6 +171,7 @@ export const usePuzzleGame = () => {
         case 'ArrowDown': e.preventDefault(); changeDirection('DOWN'); moveSnakeAndCheck(); break;
         case 'ArrowLeft': e.preventDefault(); changeDirection('LEFT'); moveSnakeAndCheck(); break;
         case 'ArrowRight': e.preventDefault(); changeDirection('RIGHT'); moveSnakeAndCheck(); break;
+        case 'Backspace': case 'z': e.preventDefault(); undo(); break;
       }
     };
     window.addEventListener('keydown', handleKeyPress);
@@ -152,5 +184,6 @@ export const usePuzzleGame = () => {
     moveSnakeAndCheck,
     restartLevel,
     goToNextLevel,
+    undo,
   };
 };
