@@ -143,7 +143,7 @@ export const usePhysicsGame = () => {
 
       // Check Food
       let newFood = [...prev.food];
-      const foodIndex = newFood.findIndex(f => 
+      const foodIndex = newFood.findIndex(f =>
         Math.abs(f.x - newX) < TILE_SIZE && Math.abs(f.y - newY) < TILE_SIZE
       );
       if (foodIndex !== -1) {
@@ -178,7 +178,6 @@ export const usePhysicsGame = () => {
     return () => clearInterval(loop);
   }, [gameLoop]);
 
-<<<<<<< HEAD
   const loadCustomLevel = useCallback((level: PhysicsLevel) => {
     setGameState({
       currentLevelIndex: -1,
@@ -192,18 +191,25 @@ export const usePhysicsGame = () => {
     });
   }, []);
 
-=======
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   return {
     gameState,
     moveHorizontal,
     stopHorizontal,
     jump,
-<<<<<<< HEAD
     startGame,
-    loadCustomLevel
-=======
-    startGame
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
+    loadCustomLevel,
+    resetLevel: () => setGameState(prev => {
+      const level = prev.level;
+      return {
+        currentLevelIndex: prev.currentLevelIndex,
+        level,
+        snake: { pos: { x: level.initialSnake[0].x * TILE_SIZE, y: level.initialSnake[0].y * TILE_SIZE }, vel: { x: 0, y: 0 } },
+        food: level.foodPositions.map(p => ({ x: p.x * TILE_SIZE, y: p.y * TILE_SIZE })),
+        isLevelComplete: false,
+        isLevelFailed: false,
+        canJump: false,
+        gameStarted: false
+      }
+    })
   };
 };

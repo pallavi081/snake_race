@@ -4,11 +4,8 @@ import { GRID_SIZE } from '../utils/gameLogic.ts';
 
 interface GameCanvasProps {
   gameState: GameState;
-<<<<<<< HEAD
   onStart?: () => void;
   onRestart?: () => void;
-=======
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 }
 
 const getPowerUpColor = (type: PowerUpType) => {
@@ -31,11 +28,7 @@ const getPowerUpSymbol = (type: PowerUpType) => {
   return symbols[type];
 };
 
-<<<<<<< HEAD
 const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }) => {
-=======
-const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { canvasWidth, canvasHeight, settings } = gameState;
 
@@ -47,20 +40,20 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
     if (!ctx) return;
 
     // Clear canvas
-    ctx.fillStyle = '#1a1a1a';
+    ctx.fillStyle = settings.bgColor;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Draw grid
-    ctx.strokeStyle = '#333';
+    ctx.strokeStyle = settings.gridColor;
     ctx.lineWidth = 0.5;
-    
+
     for (let x = 0; x <= canvasWidth; x += GRID_SIZE) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, canvasHeight);
       ctx.stroke();
     }
-    
+
     for (let y = 0; y <= canvasHeight; y += GRID_SIZE) {
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -87,7 +80,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
         ctx.fillStyle = settings.snakeBodyColor;
         ctx.shadowBlur = 0;
       }
-      
+
       ctx.fillRect(
         segment.x * GRID_SIZE + 1,
         segment.y * GRID_SIZE + 1,
@@ -106,14 +99,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
       GRID_SIZE - 4,
       GRID_SIZE - 4
     );
-    
+
     // Draw power-ups
     gameState.powerUps.forEach(powerUp => {
       const color = getPowerUpColor(powerUp.type);
       ctx.fillStyle = color;
       ctx.shadowColor = color;
       ctx.shadowBlur = 10;
-      
+
       // Draw power-up background
       ctx.fillRect(
         powerUp.position.x * GRID_SIZE + 1,
@@ -121,7 +114,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
         GRID_SIZE - 2,
         GRID_SIZE - 2
       );
-      
+
       // Draw power-up symbol
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#ffffff';
@@ -133,7 +126,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
         powerUp.position.y * GRID_SIZE + GRID_SIZE / 2 + 4
       );
     });
-    
+
     ctx.shadowBlur = 0;
   }, [gameState.snake, gameState.food, gameState.powerUps, gameState.particles, canvasWidth, canvasHeight, settings]);
 
@@ -143,29 +136,25 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
         ref={canvasRef}
         width={canvasWidth}
         height={canvasHeight}
-        className="border-2 border-gray-600 rounded-lg shadow-lg"
-        style={{ imageRendering: 'pixelated' }}
+        className="border-2 rounded-lg shadow-lg"
+        style={{
+          imageRendering: 'pixelated',
+          borderColor: settings.borderColor
+        }}
       />
-      
+
       {!gameState.gameStarted && !gameState.gameOver && (
-<<<<<<< HEAD
-        <div 
+        <div
           className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
           onClick={onStart}
         >
           <p className="text-white text-xl font-bold mb-2">Snake Game</p>
           <p className="text-white text-sm">Press SPACE or Tap to start</p>
-=======
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg">
-          <p className="text-white text-xl font-bold mb-2">Snake Game</p>
-          <p className="text-white text-sm">Press SPACE to start</p>
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         </div>
       )}
-      
+
       {gameState.gameOver && (
-<<<<<<< HEAD
-        <div 
+        <div
           className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
           onClick={onRestart}
         >
@@ -173,16 +162,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState }) => {
           <p className="text-white text-lg mb-2">Score: {gameState.score}</p>
           <p className="text-white text-md mb-2">Level: {gameState.level}</p>
           <p className="text-white text-sm">Press SPACE or Tap to restart</p>
-=======
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 rounded-lg">
-          <p className="text-white text-2xl font-bold mb-2">Game Over!</p>
-          <p className="text-white text-lg mb-2">Score: {gameState.score}</p>
-          <p className="text-white text-md mb-2">Level: {gameState.level}</p>
-          <p className="text-white text-sm">Press SPACE to restart</p>
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
         </div>
       )}
-      
+
       {/* Active Power-up Indicator */}
       {gameState.activePowerUp && (
         <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">

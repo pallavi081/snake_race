@@ -25,6 +25,9 @@ export interface Settings {
   foodColor: string;
   snakeHeadColor: string;
   snakeBodyColor: string;
+  bgColor: string;
+  gridColor: string;
+  borderColor: string;
 }
 
 export interface GameState {

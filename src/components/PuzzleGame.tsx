@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { usePuzzleGame } from '../hooks/usePuzzleGame.ts';
 import PuzzleCanvas from './PuzzleCanvas.tsx';
@@ -41,11 +40,11 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
   const handleEditorClick = (x: number, y: number) => {
     setCustomLevel(prev => {
       const newLevel = { ...prev };
-      
+
       // Remove existing items at this position
       newLevel.obstaclePositions = newLevel.obstaclePositions.filter(p => p.x !== x || p.y !== y);
       newLevel.foodPositions = newLevel.foodPositions.filter(p => p.x !== x || p.y !== y);
-      
+
       if (selectedTool === 'wall') {
         newLevel.obstaclePositions.push({ x, y });
       } else if (selectedTool === 'food') {
@@ -53,7 +52,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
       } else if (selectedTool === 'snake') {
         newLevel.initialSnake = [{ x, y }];
       }
-      
+
       return newLevel;
     });
   };
@@ -68,24 +67,6 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
     setIsEditing(false);
     setHasStarted(true);
   };
-=======
-import React, { useState } from 'react';
-import { usePuzzleGame } from '../hooks/usePuzzleGame.ts';
-import PuzzleCanvas from './PuzzleCanvas.tsx';
-import SwipeControls from './SwipeControls.tsx';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft, HelpCircle, Play, RotateCcw } from 'lucide-react';
-import { Direction } from '../types/game.ts';
-import PuzzleInstructions from './PuzzleInstructions.tsx';
-
-interface PuzzleGameProps {
-  onBack: () => void;
-}
-
-const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
-  const { gameState, changeDirection, moveSnakeAndCheck, restartLevel, goToNextLevel, undo } = usePuzzleGame();
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
   const handleSwipe = (direction: Direction) => {
     changeDirection(direction);
@@ -96,7 +77,6 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
 
   return (
     <SwipeControls onSwipe={handleSwipe}>
-<<<<<<< HEAD
       <div className={`flex flex-col items-center justify-center min-h-screen p-4 ${hasStarted && !isEditing ? 'cursor-none' : ''}`}>
         {isEditing ? (
           <div className="flex flex-col items-center w-full max-w-md">
@@ -125,10 +105,10 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
               </button>
             </div>
 
-            <div 
+            <div
               className="relative bg-gray-900 border-2 border-gray-600"
-              style={{ 
-                width: customLevel.gridSize * 20, 
+              style={{
+                width: customLevel.gridSize * 20,
                 height: customLevel.gridSize * 20,
                 display: 'grid',
                 gridTemplateColumns: `repeat(${customLevel.gridSize}, 1fr)`,
@@ -143,7 +123,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
                 const isSnake = customLevel.initialSnake[0].x === x && customLevel.initialSnake[0].y === y;
 
                 return (
-                  <div 
+                  <div
                     key={i}
                     onClick={() => handleEditorClick(x, y)}
                     className={`border-[0.5px] border-gray-800 cursor-pointer hover:bg-white/10 
@@ -156,10 +136,6 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
             </div>
           </div>
         ) : !hasStarted ? (
-=======
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        {!hasStarted ? (
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
           <div className="flex flex-col items-center w-full max-w-md mb-8">
             <div className="flex items-center justify-between w-full mb-8">
               <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white">
@@ -170,7 +146,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
                 <HelpCircle size={24} />
               </button>
             </div>
-            <button 
+            <button
               onClick={() => setHasStarted(true)}
               className="flex items-center gap-3 px-8 py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-bold text-2xl transition-all hover:scale-105 shadow-lg"
             >
@@ -187,41 +163,34 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
               <span>Level: {gameState.currentLevelIndex + 1}</span>
               <span>Moves Left: {gameState.movesLeft}</span>
             </div>
-            <PuzzleCanvas 
-              level={gameState.level} 
-              snake={gameState.snake} 
-              food={gameState.food} 
+            <PuzzleCanvas
+              level={gameState.level}
+              snake={gameState.snake}
+              food={gameState.food}
             />
           </>
         )}
 
-<<<<<<< HEAD
         {/* On-screen buttons for mobile - Only show when playing */}
         {!isEditing && (
-=======
-        {/* On-screen buttons for mobile */}
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
-        <div className="grid grid-cols-3 gap-3 mt-4 md:hidden">
-          <div></div>
-          <button className={buttonClass} onClick={() => handleSwipe('UP')}><ChevronUp size={32} /></button>
-          <div></div>
-          <button className={buttonClass} onClick={() => handleSwipe('LEFT')}><ChevronLeft size={32} /></button>
-          <div></div>
-          <button className={buttonClass} onClick={() => handleSwipe('RIGHT')}><ChevronRight size={32} /></button>
-          <div></div>
-          <button className={buttonClass} onClick={() => handleSwipe('DOWN')}><ChevronDown size={32} /></button>
-          <div></div>
-        </div>
-<<<<<<< HEAD
+          <div className="grid grid-cols-3 gap-3 mt-4 md:hidden">
+            <div></div>
+            <button className={buttonClass} onClick={() => handleSwipe('UP')}><ChevronUp size={32} /></button>
+            <div></div>
+            <button className={buttonClass} onClick={() => handleSwipe('LEFT')}><ChevronLeft size={32} /></button>
+            <div></div>
+            <button className={buttonClass} onClick={() => handleSwipe('RIGHT')}><ChevronRight size={32} /></button>
+            <div></div>
+            <button className={buttonClass} onClick={() => handleSwipe('DOWN')}><ChevronDown size={32} /></button>
+            <div></div>
+          </div>
         )}
-=======
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 
         {showInstructions && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="relative rounded-lg p-6 max-w-lg w-full bg-gray-900 border border-gray-700">
               <PuzzleInstructions />
-              <button 
+              <button
                 onClick={() => setShowInstructions(false)}
                 className="absolute top-3 right-3 px-3 py-1 rounded-full bg-red-500 text-white hover:bg-red-600"
               >
@@ -234,7 +203,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
         {gameState.isLevelComplete && (
           <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center text-white">
             <h2 className="text-4xl font-bold mb-4">Level Complete!</h2>
-            <button 
+            <button
               onClick={goToNextLevel}
               className="px-6 py-3 bg-green-600 rounded-lg font-semibold"
             >
@@ -246,7 +215,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack }) => {
         {gameState.isLevelFailed && (
           <div className="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center text-white">
             <h2 className="text-4xl font-bold mb-4">Level Failed</h2>
-            <button 
+            <button
               onClick={restartLevel}
               className="px-6 py-3 bg-red-600 rounded-lg font-semibold"
             >

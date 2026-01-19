@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Position, Direction } from '../types/game';
 import { checkWallCollision, getOppositeDirection, GRID_SIZE } from '../utils/gameLogic.ts';
+import storage from '../utils/storage';
 
 export interface Snake {
   id: string;
@@ -434,13 +435,44 @@ export const useBattleGame = () => {
         // Winner check
         const alive = newSnakes.filter(s => !s.isDead);
         let winner = prev.winner;
-        let gameOver = prev.gameOver;
+        let gameOver: boolean = prev.gameOver;
 
         if (alive.length === 1 && prev.snakes.length > 1) {
           winner = alive[0].name;
           gameOver = true;
         } else if (alive.length === 0) {
           gameOver = true;
+        }
+
+        if (gameOver && !prev.gameOver) {
+          const mySnake = newSnakes.find(s => s.id === prev.myId);
+          if (mySnake) {
+            const isWinner = winner === mySnake.name;
+            const placementScore = isWinner ? 500 : 0;
+            const totalScore = mySnake.score + placementScore;
+
+            // Save to leaderboard
+            storage.addLeaderboardEntry({
+              name: mySnake.name,
+              score: totalScore,
+              level: mySnake.level,
+              kills: mySnake.kills,
+              mode: 'Battle'
+            });
+
+            // Update player stats
+            const player = storage.getPlayer();
+            storage.savePlayer({
+              totalScore: player.totalScore + totalScore,
+              totalKills: player.totalKills + mySnake.kills,
+              gamesPlayed: player.gamesPlayed + 1,
+              wins: player.wins + (isWinner ? 1 : 0),
+              coins: player.coins + Math.floor(totalScore / 10) + (isWinner ? 100 : 0),
+              lastPlayDate: new Date().toDateString()
+            });
+
+            storage.updateStreak();
+          }
         }
 
         return { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner };

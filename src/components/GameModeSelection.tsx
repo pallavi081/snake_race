@@ -1,53 +1,98 @@
 import React, { useState, useEffect } from 'react';
-<<<<<<< HEAD
-import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code } from 'lucide-react';
+import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar } from 'lucide-react';
 import GameInstructions from './GameInstructions';
+import Leaderboard from './Leaderboard';
+import Shop from './Shop';
+import Achievements from './Achievements';
+import DailyChallenges from './DailyChallenges';
+import { storage } from '../utils/storage';
 
 interface GameModeSelectionProps {
   onSelectMode: (mode: 'classic' | 'puzzle' | 'physics' | 'battle') => void;
-=======
-import { Shield, Puzzle, Wind, BookOpen, X, Download } from 'lucide-react';
-import GameInstructions from './GameInstructions';
-
-interface GameModeSelectionProps {
-  onSelectMode: (mode: 'classic' | 'puzzle' | 'physics') => void;
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
 }
 
 const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) => {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showShop, setShowShop] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [player, setPlayer] = useState(storage.getPlayer());
 
   useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
-<<<<<<< HEAD
-=======
-      console.log('PWA Install Prompt captured');
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
       setDeferredPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  useEffect(() => {
+    // Update streak on load
+    storage.updateStreak();
+    setPlayer(storage.getPlayer());
+  }, []);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-<<<<<<< HEAD
     if (outcome === 'accepted') setDeferredPrompt(null);
   };
 
+  const refreshPlayer = () => setPlayer(storage.getPlayer());
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-white">
+      {/* Top Bar */}
+      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-yellow-400 font-bold">🪙 {player.coins}</span>
+            <span className="text-orange-400 text-sm">🔥 {player.currentStreak} days</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDailyChallenges(true)}
+              className="p-2 bg-blue-600/20 hover:bg-blue-600/40 rounded-lg transition-all"
+              title="Daily Challenges"
+            >
+              <Calendar size={18} className="text-blue-400" />
+            </button>
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="p-2 bg-yellow-600/20 hover:bg-yellow-600/40 rounded-lg transition-all"
+              title="Leaderboard"
+            >
+              <Trophy size={18} className="text-yellow-400" />
+            </button>
+            <button
+              onClick={() => setShowAchievements(true)}
+              className="p-2 bg-purple-600/20 hover:bg-purple-600/40 rounded-lg transition-all"
+              title="Achievements"
+            >
+              <Star size={18} className="text-purple-400" />
+            </button>
+            <button
+              onClick={() => setShowShop(true)}
+              className="p-2 bg-green-600/20 hover:bg-green-600/40 rounded-lg transition-all"
+              title="Shop"
+            >
+              <ShoppingBag size={18} className="text-green-400" />
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="text-center mb-8 md:mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">Snake Race</h1>
           <p className="text-gray-400 text-sm md:text-lg">Choose your challenge</p>
 
-          <div className="flex gap-3 justify-center mt-4">
+          <div className="flex gap-3 justify-center mt-4 flex-wrap">
             <button
               onClick={() => setShowHowToPlay(true)}
               className="flex items-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 text-sm"
@@ -66,17 +111,7 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
           </div>
         </div>
 
-        {showHowToPlay && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-            <div className="bg-gray-800 p-6 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-700 relative">
-              <button onClick={() => setShowHowToPlay(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <X size={24} />
-              </button>
-              <GameInstructions />
-            </div>
-          </div>
-        )}
-
+        {/* Game Modes */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 max-w-4xl w-full">
           <div className="p-4 md:p-6 rounded-xl border-2 border-gray-700 hover:border-blue-500 bg-gray-800 cursor-pointer hover:scale-105 transition-all" onClick={() => onSelectMode('classic')}>
             <Shield size={32} className="text-blue-500 mb-2 mx-auto md:mx-0" />
@@ -101,6 +136,13 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <h2 className="text-lg md:text-xl font-bold text-center md:text-left">Battle</h2>
             <p className="text-gray-400 text-xs md:text-sm hidden md:block mt-2">Multiplayer battle royale</p>
           </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="mt-8 flex gap-4 text-sm text-gray-400">
+          <span>🎮 {player.gamesPlayed} games</span>
+          <span>🏆 {player.wins} wins</span>
+          <span>💀 {player.totalKills} kills</span>
         </div>
       </div>
 
@@ -131,7 +173,6 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
 
           {/* Desktop Footer */}
           <div className="hidden md:grid md:grid-cols-3 gap-8 text-sm">
-            {/* Developer */}
             <div>
               <h4 className="font-bold text-white mb-3 flex items-center gap-2">
                 <Code size={16} className="text-purple-400" /> Developer
@@ -142,7 +183,6 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
               </a>
             </div>
 
-            {/* Game Modes */}
             <div>
               <h4 className="font-bold text-white mb-3">🎮 Game Modes</h4>
               <ul className="space-y-1 text-gray-400">
@@ -153,7 +193,6 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
               </ul>
             </div>
 
-            {/* Tech Stack */}
             <div>
               <h4 className="font-bold text-white mb-3">⚡ Built With</h4>
               <div className="flex flex-wrap gap-2">
@@ -166,45 +205,13 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             </div>
           </div>
 
-          {/* Copyright */}
           <div className="text-center mt-6 pt-4 border-t border-gray-700 text-xs text-gray-500">
             © 2025 Snake Race. Made with <Heart size={10} className="inline text-red-500" fill="currentColor" /> by Pallavi Kumari
           </div>
         </div>
       </footer>
-=======
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 text-white">
-      <div className="text-center mb-12">
-        <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">Snake Race</h1>
-        <p className="text-gray-400 text-lg">Choose your challenge</p>
-        
-        <div className="flex gap-4 justify-center mt-6">
-          <button 
-            onClick={() => setShowHowToPlay(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-full border border-gray-700 transition-all"
-          >
-            <BookOpen size={18} />
-            <span>How to Play</span>
-          </button>
-
-          {deferredPrompt && (
-            <button 
-              onClick={handleInstallClick}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-full border border-blue-500 transition-all shadow-lg hover:shadow-blue-500/20"
-            >
-              <Download size={18} />
-              <span>Install App</span>
-            </button>
-          )}
-        </div>
-      </div>
-
+      {/* Modals */}
       {showHowToPlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
           <div className="bg-gray-800 p-6 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-700 relative">
@@ -216,56 +223,12 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
         </div>
       )}
 
-      <div className="grid md:grid-cols-3 gap-8">
-        {/* Classic Mode */}
-        <div 
-          className="p-6 rounded-xl border-2 border-gray-700 hover:border-blue-500 bg-gray-800 transition-all cursor-pointer hover:scale-105"
-          onClick={() => onSelectMode('classic')}
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <Shield size={40} className="text-blue-500" />
-            <h2 className="text-2xl font-bold">Classic Mode</h2>
-          </div>
-          <p className="text-gray-300">
-            The timeless snake game experience. Eat, grow, and survive as long as you can.
-          </p>
-        </div>
-
-        {/* Puzzle Mode */}
-        <div 
-          className="p-6 rounded-xl border-2 border-gray-700 hover:border-green-500 bg-gray-800 transition-all cursor-pointer hover:scale-105"
-          onClick={() => onSelectMode('puzzle')}
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <Puzzle size={40} className="text-green-500" />
-            <h2 className="text-2xl font-bold">Puzzle Mode</h2>
-          </div>
-          <p className="text-gray-300">
-            Solve challenging puzzles by eating all the food within a limited number of moves.
-          </p>
-        </div>
-
-        {/* Physics Mode */}
-        <div 
-          className="p-6 rounded-xl border-2 border-gray-700 hover:border-yellow-500 bg-gray-800 transition-all cursor-pointer hover:scale-105"
-          onClick={() => onSelectMode('physics')}
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <Wind size={40} className="text-yellow-500" />
-            <h2 className="text-2xl font-bold">Physics Mode</h2>
-          </div>
-          <p className="text-gray-300">
-            A new challenge with gravity, platforms, and physics-based movement.
-          </p>
-        </div>
-      </div>
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
+      {showShop && <Shop onClose={() => { setShowShop(false); refreshPlayer(); }} onPurchase={refreshPlayer} />}
+      {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
+      {showDailyChallenges && <DailyChallenges onClose={() => setShowDailyChallenges(false)} />}
     </div>
   );
 };
 
 export default GameModeSelection;
-<<<<<<< HEAD
-
-=======
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08

@@ -4,6 +4,8 @@ import { useBattleGame, SNAKE_COLORS } from './useBattleGame';
 import BattleCanvas from './BattleCanvas';
 import SwipeControls from './SwipeControls';
 import { Direction } from '../types/game';
+import storage from '../utils/storage';
+import { getThemeById } from '../data/skins';
 
 interface BattleGameProps {
   onBack: () => void;
@@ -17,6 +19,10 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   const [mode, setMode] = useState<'name' | 'menu' | 'lobby' | 'game'>('name');
   const [copied, setCopied] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
+
+  // Get theme from storage
+  const selectedTheme = storage.getPlayer().selectedTheme;
+  const theme = getThemeById(selectedTheme);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -277,7 +283,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
           )}
 
           <SwipeControls onSwipe={handleSwipe}>
-            <BattleCanvas gameState={gameState} />
+            <BattleCanvas gameState={gameState} theme={theme} />
           </SwipeControls>
 
           {/* Game Over */}

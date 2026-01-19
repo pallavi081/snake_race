@@ -7,7 +7,7 @@ const GameInstructions: React.FC = () => {
       <h3 className="font-bold mb-3 text-white">
         How to Play
       </h3>
-      
+
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -22,7 +22,7 @@ const GameInstructions: React.FC = () => {
             <li>• 'P' or 'ESC' to Pause</li>
           </ul>
         </div>
-        
+
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Smartphone className="w-4 h-4 text-green-400" />
@@ -31,17 +31,12 @@ const GameInstructions: React.FC = () => {
             </span>
           </div>
           <ul className="text-sm space-y-1 text-gray-300">
-<<<<<<< HEAD
             <li>• Swipe to move</li>
             <li>• Tap screen to start/restart</li>
-=======
-            <li>• Touch direction buttons</li>
-            <li>• Tap start/restart buttons</li>
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
           </ul>
         </div>
       </div>
-      
+
       <div className="mt-4">
         <h4 className="font-medium mb-2 text-white">
           Rules
@@ -53,7 +48,7 @@ const GameInstructions: React.FC = () => {
           <li>• Game speed increases every 50 points</li>
         </ul>
       </div>
-      
+
       <div className="mt-4">
         <div className="flex items-center gap-2 mb-2">
           <Zap className="w-4 h-4 text-yellow-400" />
@@ -68,7 +63,7 @@ const GameInstructions: React.FC = () => {
           <li>• ↓ Shrink - Snake shrinks when eating food</li>
         </ul>
       </div>
-      
+
       <div className="mt-4">
         <div className="flex items-center gap-2 mb-2">
           <Award className="w-4 h-4 text-purple-400" />

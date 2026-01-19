@@ -1,0 +1,175 @@
+// Storage utility for localStorage
+const STORAGE_KEYS = {
+    PLAYER_DATA: 'snake_race_player',
+    LEADERBOARD: 'snake_race_leaderboard',
+    ACHIEVEMENTS: 'snake_race_achievements',
+    DAILY_CHALLENGES: 'snake_race_daily',
+    SHOP: 'snake_race_shop',
+    SETTINGS: 'snake_race_settings',
+};
+
+// Player data
+export interface PlayerData {
+    name: string;
+    coins: number;
+    totalScore: number;
+    totalKills: number;
+    gamesPlayed: number;
+    wins: number;
+    currentStreak: number;
+    longestStreak: number;
+    lastPlayDate: string;
+    selectedSkin: string;
+    selectedTheme: string;
+    unlockedSkins: string[];
+    unlockedThemes: string[];
+}
+
+// Leaderboard entry
+export interface LeaderboardEntry {
+    id: string;
+    name: string;
+    score: number;
+    level: number;
+    kills: number;
+    mode: string;
+    date: string;
+}
+
+// Achievement progress
+export interface AchievementProgress {
+    id: string;
+    unlocked: boolean;
+    progress: number;
+    unlockedAt?: string;
+}
+
+// Daily challenge
+export interface DailyChallengeState {
+    date: string;
+    challenges: { id: string; progress: number; completed: boolean }[];
+    streak: number;
+}
+
+// Default player data
+const defaultPlayerData: PlayerData = {
+    name: 'Player',
+    coins: 100,
+    totalScore: 0,
+    totalKills: 0,
+    gamesPlayed: 0,
+    wins: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    lastPlayDate: '',
+    selectedSkin: 'default',
+    selectedTheme: 'default',
+    unlockedSkins: ['default'],
+    unlockedThemes: ['default'],
+};
+
+// Storage functions
+export const storage = {
+    // Player
+    getPlayer: (): PlayerData => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.PLAYER_DATA);
+            return data ? { ...defaultPlayerData, ...JSON.parse(data) } : defaultPlayerData;
+        } catch {
+            return defaultPlayerData;
+        }
+    },
+
+    savePlayer: (data: Partial<PlayerData>) => {
+        const current = storage.getPlayer();
+        localStorage.setItem(STORAGE_KEYS.PLAYER_DATA, JSON.stringify({ ...current, ...data }));
+    },
+
+    // Leaderboard
+    getLeaderboard: (mode?: string): LeaderboardEntry[] => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.LEADERBOARD);
+            const entries: LeaderboardEntry[] = data ? JSON.parse(data) : [];
+            if (mode) return entries.filter(e => e.mode === mode).sort((a, b) => b.score - a.score).slice(0, 100);
+            return entries.sort((a, b) => b.score - a.score).slice(0, 100);
+        } catch {
+            return [];
+        }
+    },
+
+    addLeaderboardEntry: (entry: Omit<LeaderboardEntry, 'id' | 'date'>) => {
+        const entries = storage.getLeaderboard();
+        const newEntry: LeaderboardEntry = {
+            ...entry,
+            id: Date.now().toString(),
+            date: new Date().toISOString(),
+        };
+        entries.push(newEntry);
+        // Keep top 500 overall
+        entries.sort((a, b) => b.score - a.score);
+        localStorage.setItem(STORAGE_KEYS.LEADERBOARD, JSON.stringify(entries.slice(0, 500)));
+    },
+
+    // Achievements
+    getAchievements: (): Record<string, AchievementProgress> => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.ACHIEVEMENTS);
+            return data ? JSON.parse(data) : {};
+        } catch {
+            return {};
+        }
+    },
+
+    saveAchievement: (id: string, progress: Partial<AchievementProgress>) => {
+        const achievements = storage.getAchievements();
+        achievements[id] = { id, unlocked: false, progress: 0, ...achievements[id], ...progress };
+        localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(achievements));
+    },
+
+    // Daily Challenges
+    getDailyChallenges: (): DailyChallengeState | null => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.DAILY_CHALLENGES);
+            return data ? JSON.parse(data) : null;
+        } catch {
+            return null;
+        }
+    },
+
+    saveDailyChallenges: (state: DailyChallengeState) => {
+        localStorage.setItem(STORAGE_KEYS.DAILY_CHALLENGES, JSON.stringify(state));
+    },
+
+    // Add coins
+    addCoins: (amount: number) => {
+        const player = storage.getPlayer();
+        storage.savePlayer({ coins: player.coins + amount });
+    },
+
+    // Check if new day
+    isNewDay: (): boolean => {
+        const player = storage.getPlayer();
+        const today = new Date().toDateString();
+        return player.lastPlayDate !== today;
+    },
+
+    // Update streak
+    updateStreak: () => {
+        const player = storage.getPlayer();
+        const today = new Date().toDateString();
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+        if (player.lastPlayDate === yesterday) {
+            const newStreak = player.currentStreak + 1;
+            storage.savePlayer({
+                currentStreak: newStreak,
+                longestStreak: Math.max(newStreak, player.longestStreak),
+                lastPlayDate: today,
+            });
+        } else if (player.lastPlayDate !== today) {
+            storage.savePlayer({ currentStreak: 1, lastPlayDate: today });
+        }
+    },
+};
+
+export default storage;

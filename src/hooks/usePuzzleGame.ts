@@ -81,7 +81,7 @@ export const usePuzzleGame = () => {
         if (navigator.vibrate) navigator.vibrate(200);
         return { ...prev, isLevelFailed: true };
       }
-      
+
       newSnake.unshift(head);
 
       // Check food collision
@@ -114,10 +114,10 @@ export const usePuzzleGame = () => {
   const undo = useCallback(() => {
     setGameState(prev => {
       if (prev.history.length === 0 || prev.isLevelComplete || prev.isLevelFailed) return prev;
-      
+
       const previousState = prev.history[prev.history.length - 1];
       const newHistory = prev.history.slice(0, -1);
-      
+
       return { ...previousState, history: newHistory };
     });
   }, []);
@@ -159,10 +159,9 @@ export const usePuzzleGame = () => {
       });
     } else {
       // All levels complete
-      setGameState(prev => ({...prev, isLevelComplete: true}));
+      setGameState(prev => ({ ...prev, isLevelComplete: true }));
     }
   }, [currentLevelIndex]);
-<<<<<<< HEAD
 
   const loadCustomLevel = useCallback((level: PuzzleLevel) => {
     setGameState({
@@ -177,9 +176,7 @@ export const usePuzzleGame = () => {
       history: [],
     });
   }, []);
-=======
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
-  
+
   // This hook is for keyboard controls
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -202,9 +199,6 @@ export const usePuzzleGame = () => {
     restartLevel,
     goToNextLevel,
     undo,
-<<<<<<< HEAD
     loadCustomLevel,
-=======
->>>>>>> 505cc2729727df186e07ac9b447054aeddee4e08
   };
 };

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BattleGameState, PowerUpType } from './useBattleGame';
+import { Theme } from '../data/skins';
 
 interface BattleCanvasProps {
   gameState: BattleGameState;
+  theme: Theme;
 }
 
 const POWER_UP_COLORS: Record<PowerUpType, string> = {
@@ -21,7 +23,7 @@ const POWER_UP_ICONS: Record<PowerUpType, string> = {
   bomb: '💣'
 };
 
-const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState }) => {
+const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState }) => {
     }
 
     // Clear
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = theme.bgColor;
     ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
 
     // Save context and translate for camera
@@ -78,7 +80,7 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState }) => {
     ctx.translate(-cameraX, -cameraY);
 
     // Grid
-    ctx.strokeStyle = '#1f2937';
+    ctx.strokeStyle = theme.gridColor;
     ctx.lineWidth = 1;
     for (let i = 0; i <= gameState.canvasWidth; i += gridSize) {
       ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, gameState.canvasHeight); ctx.stroke();
@@ -88,7 +90,7 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState }) => {
     }
 
     // Map border
-    ctx.strokeStyle = '#ef4444';
+    ctx.strokeStyle = theme.borderColor;
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 0, gameState.canvasWidth, gameState.canvasHeight);
 
