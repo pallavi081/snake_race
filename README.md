@@ -1,92 +1,71 @@
-# Responsive Retro Snake Game
+# Responsive Retro & Battle Royale Snake Game
 
-A classic snake game built with a modern tech stack, featuring power-ups, a scoring system, and a responsive design for both desktop and mobile devices. Now with PWA support!
+A modern, feature-rich Snake game built with React, TypeScript, and Vite. It combines classic gameplay with a high-octane **Battle Royale mode**, RPG-like progression, and a full economic system.
 
-## Features
+## 🚀 Key Features
 
-- **Game Modes:** Choose between three different game modes:
-    - **Classic Mode:** The timeless snake game experience.
-    - **Puzzle Mode:** Solve challenging puzzles by eating all the food within a limited number of moves. Includes an **Undo** feature.
-    - **Physics Mode:** A unique challenge with gravity, platforms, jumping mechanics, and physics-based movement.
-- **Progressive Web App (PWA):** Install the game on your device for offline play and a native app-like experience.
-- **Classic Snake Gameplay:** Enjoy the timeless fun of the snake game with **Pause** functionality.
-- **Power-ups:** Spice up the game with exciting power-ups like speed boost, slow motion, double points, and shrink.
-- **Scoring System:** Compete for the high score with a combo and level-based scoring system.
-- **Difficulty Levels:** Choose between Easy, Medium, and Hard difficulty levels.
-- **Sound Effects & Haptics:** Immersive sound effects and haptic feedback (vibration) on supported devices.
-- **Dark Mode:** Switch between light and dark themes for a comfortable viewing experience.
-- **Responsive Design:** Fully responsive layout for all screen sizes, with a special focus on mobile experience. The game canvas and controls adapt to the screen size for optimal gameplay.
-- **Customizable Colors:** Change the colors of the food and the snake in the settings menu.
-- **How to Play:** A handy guide to get you started with the game rules and controls.
-- **Back Button:** Easily navigate back to the game mode selection screen from any game mode.
-- **Extensive Levels:** Over 50 levels available in Puzzle and Physics modes.
+### 🎮 Game Modes
+1.  **Classic Mode:** The timeless experience. Eat food, grow, and avoid walls.
+2.  **Battle Royale:** Enter a massive persistent arena with smart bots.
+    *   **Combat:** Cut off other snakes to kill them.
+    *   **Progression:** Collect XP orbs to level up and increase size.
+    *   **Power-Ups:** Shield, Magnet, Speed Boost, and Double XP.
+3.  **Puzzle Mode:** specialized challenges with move limits and undo functionality.
+4.  **Physics Mode:** Gravity, jumping, and platforms platformer-style mechanics.
 
-## Technologies Used
+### 🏆 Progression & Economy
+*   **Global Leaderboard:** Track high scores across all modes locally.
+*   **Shop System:** Earn coins to unlock **9 Unique Skins** and **6 Visual Themes**.
+*   **Daily Challenges:** 3 new quests every day (e.g., "Get 5 kills") to earn rewards and keep a streak.
+*   **Achievements:** Over 50 unlockable achievements with toast notifications.
+*   **Player Stats:** Comprehensive tracking of kills, win rate, total score, and play time.
 
-- [React](https://reactjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Vite](https://vitejs.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
+### 📱 Mobile Experience
+*   **PWA Support:** Installable as a native app on iOS and Android.
+*   **Touch Controls:** Optimized swipe gestures for smooth movement.
+*   **Responsive UI:** all menus, modals, and game canvases scale perfectly to phone screens.
 
-## Getting Started
+## 🛠️ Technologies Used
+-   **Frontend:** React 18, TypeScript, Vite
+-   **Styling:** Tailwind CSS, Lucide React (Icons)
+-   **State/Storage:** LocalStorage (Persistence), Custom Hooks
+-   **Audio:** Web Audio API (Synthesized sound effects)
 
-To get a local copy up and running follow these simple steps.
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) installed on your machine.
-
-### Installation
-
-1. Clone the repo
-   ```sh
-   git clone https://github.com/your_username_/project_repo.git
-   ```
-2. Navigate to the project directory
+## 📦 Installation
+1.  **Clone the repo**
     ```sh
+    git clone https://github.com/your_username_/project_repo.git
     cd snake_race-main
     ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Run the development server
+2.  **Install dependencies**
+    ```sh
+    npm install
+    # Also install dev dependencies if needed
+    npm install -D vite @vitejs/plugin-react tailwindcss autoprefixer postcss
+    ```
+3.  **Run Development Server**
     ```sh
     npm run dev
     ```
 
-## Deployment
+## 🎮 How to Play
 
-This project can be easily deployed to [Vercel](https://vercel.com/).
+### Controls
+| Action | Desktop | Mobile |
+| :--- | :--- | :--- |
+| **Move** | Arrow Keys / WASD | Swipe |
+| **Boost** | Spacebar (Hold) | Double Tap (Hold) |
+| **Pause** | 'P' or ESC | Menu Button |
 
-1. Sign up for a [Vercel](https://vercel.com/) account.
-2. Install the Vercel CLI.
-    ```sh
-    npm install -g vercel
-    ```
-3. From the project root, run the `vercel` command.
-    ```sh
-    vercel
-    ```
-4. Follow the on-screen instructions to link your project to Vercel and deploy it.
+### Battle Tips
+*   **Kill:** Boost in front of an opponent's head to make them crash into your body.
+*   **Survive:** Use Shields to protect yourself in crowded areas.
+*   **Grow:** Magnet power-ups are the fastest way to gather XP orbs.
 
-## Developer
+## 🔮 Future Roadmap
+- [ ] Online Multiplayer (WebSocket server)
+- [ ] Account Cloud Sync
+- [ ] Team Battle Mode
 
-- **Pallavi** - [https://github.com/pallavi081](https://github.com/pallavi081)
-
-## Future Enhancements
-
-Here are some ideas for future features that could be added to the game:
-
-- **Leaderboard:** Implement a leaderboard to store and display high scores.
-- **Different Game Modes:**
-    - **Wall-less mode:** The snake can go through the walls and appear on the opposite side.
-    - **Obstacle mode:** Add obstacles on the map that the snake has to avoid.
-    - **Time attack mode:** See how many points the player can get in a limited time.
-- **Snake Skins:** Allow the player to choose different skins or colors for their snake.
-- **Achievements:** Add achievements for reaching certain milestones (e.g., reaching a certain score, playing for a certain amount of time).
-- **More Power-ups:**
-    - **Invincibility:** The snake is invincible for a short period of time.
-    - **Food magnet:** The food is drawn towards the snake.
-    - **Portal:** Creates two portals on the map that the snake can go through.
-- **Multiplayer:** A real-time multiplayer mode where two players can compete against each other.
+## 👤 Developer
+-   **Pallavi** - [https://github.com/pallavi081](https://github.com/pallavi081)

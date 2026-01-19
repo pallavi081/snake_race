@@ -103,9 +103,9 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-full text-sm"
+                className="animate-pulse flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 rounded-full text-sm font-bold shadow-lg transform hover:scale-105 transition-all border border-blue-400/30"
               >
-                <Download size={16} /> Install
+                <Download size={18} /> Install Game
               </button>
             )}
           </div>

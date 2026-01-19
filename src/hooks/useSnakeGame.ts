@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSound } from './useSound';
-import { GameState, Direction, Position, PowerUpType, Difficulty, Settings } from '../types/game.ts';
+import { GameState, Direction, Position, PowerUpType, Difficulty, Settings } from '../types/game';
 import storage from '../utils/storage';
 import {
   INITIAL_SNAKE,
@@ -20,7 +20,11 @@ import {
   COMBO_TIME_LIMIT,
   POWER_UP_DURATION,
   GRID_SIZE
-} from '../utils/gameLogic.ts';
+} from '../utils/gameLogic';
+
+import { getSkinById, getThemeById } from '../data/skins';
+import { checkAchievements, GameEvent } from '../utils/achievementLogic';
+import { Achievement } from '../data/achievements';
 
 const HIGH_SCORE_KEY = 'snake-high-score';
 const SETTINGS_KEY = 'snake-settings';
@@ -34,9 +38,6 @@ const getInitialCanvasDimensions = () => {
   };
 };
 
-
-import { getSkinById, getThemeById } from '../data/skins';
-
 const getInitialSettings = (): Settings => {
   const player = storage.getPlayer();
   const skin = getSkinById(player.selectedSkin);
@@ -45,7 +46,7 @@ const getInitialSettings = (): Settings => {
   return {
     foodColor: theme.foodColor,
     snakeHeadColor: skin.color,
-    snakeBodyColor: skin.color, // Simplification for now, could use gradient if supported
+    snakeBodyColor: skin.color,
     bgColor: theme.bgColor,
     gridColor: theme.gridColor,
     borderColor: theme.borderColor,
@@ -54,6 +55,7 @@ const getInitialSettings = (): Settings => {
 
 export const useSnakeGame = () => {
   const [difficulty, setDifficultyState] = useState<Difficulty>('Medium');
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [canvasDimensions, setCanvasDimensions] = useState(getInitialCanvasDimensions());
   const [settings, setSettings] = useState<Settings>(getInitialSettings());
   const [isPaused, setIsPaused] = useState(false);
@@ -211,6 +213,19 @@ export const useSnakeGame = () => {
 
         storage.updateStreak();
 
+        // Check Achievements
+        const newAchievements = checkAchievements({
+          type: 'GAME_OVER',
+          mode: 'classic',
+          score: prevState.score,
+          level: prevState.level,
+          length: newSnake.length
+        });
+
+        if (newAchievements.length > 0) {
+          setUnlockedAchievements(prev => [...prev, ...newAchievements]);
+        }
+
         return {
           ...prevState,
           gameOver: true,
@@ -365,5 +380,7 @@ export const useSnakeGame = () => {
     isPaused,
     togglePause,
     loadCustomLevel,
+    unlockedAchievements,
+    clearAchievements: () => setUnlockedAchievements([])
   };
 }

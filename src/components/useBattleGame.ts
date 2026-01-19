@@ -1,31 +1,36 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Position, Direction } from '../types/game';
-import { checkWallCollision, getOppositeDirection, GRID_SIZE } from '../utils/gameLogic.ts';
+import { checkWallCollision, getOppositeDirection, GRID_SIZE } from '../utils/gameLogic';
 import storage from '../utils/storage';
+import { checkAchievements, GameEvent } from '../utils/achievementLogic';
+import { Achievement } from '../data/achievements';
 
 export interface Snake {
   id: string;
   name: string;
-  body: Position[];
   color: string;
+  body: Position[];
   direction: Direction;
-  isDead: boolean;
-  isPlayer: boolean;
   score: number;
+  isDead: boolean;
+  isBot: boolean;
+  isPlayer: boolean;
   level: number;
   xp: number;
   kills: number;
-  speedBoost: boolean;
   shield: boolean;
+  speedBoost: boolean;
   doubleXp: boolean;
+  magnet: boolean;
 }
 
 export type PowerUpType = 'speed' | 'shield' | 'doubleXp' | 'magnet' | 'bomb';
 
 export interface PowerUp {
   id: string;
-  position: Position;
   type: PowerUpType;
+  position: Position;
   expiresAt: number;
 }
 
@@ -44,6 +49,7 @@ export interface BattleGameState {
   isConnected: boolean;
   isPrivate: boolean;
   gameTime: number; // seconds since game started
+  startTime?: number; // timestamp
 }
 
 // Larger map for battle royale feel
@@ -68,12 +74,13 @@ export const SNAKE_COLORS = [
 // Level thresholds
 const LEVEL_XP = [0, 100, 250, 500, 800, 1200, 1700, 2500, 3500, 5000];
 
-// Speed settings - starts slow, gets faster
-const BASE_SPEED = 180; // Start slow (higher = slower)
-const MIN_SPEED = 80;   // Max speed cap
-const SPEED_DECREASE_PER_SECOND = 2; // Gets faster over time
+// Speed settings
+const BASE_SPEED = 180;
+const MIN_SPEED = 80;
+const SPEED_DECREASE_PER_SECOND = 2;
 
 export const useBattleGame = () => {
+  const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [gameState, setGameState] = useState<BattleGameState>({
     snakes: [],
     foods: [],
@@ -89,6 +96,7 @@ export const useBattleGame = () => {
     isConnected: false,
     isPrivate: false,
     gameTime: 0,
+    startTime: 0,
   });
 
   const directionRef = useRef<Direction>('UP');
@@ -147,6 +155,7 @@ export const useBattleGame = () => {
       color: playerColor,
       direction: 'UP',
       isDead: false,
+      isBot: false,
       isPlayer: true,
       score: 0,
       level: 1,
@@ -154,7 +163,8 @@ export const useBattleGame = () => {
       kills: 0,
       speedBoost: false,
       shield: false,
-      doubleXp: false
+      doubleXp: false,
+      magnet: false
     };
 
     setGameState(prev => ({
@@ -191,6 +201,7 @@ export const useBattleGame = () => {
       color: playerColor,
       direction: 'UP',
       isDead: false,
+      isBot: false,
       isPlayer: true,
       score: 0,
       level: 1,
@@ -198,7 +209,8 @@ export const useBattleGame = () => {
       kills: 0,
       speedBoost: false,
       shield: false,
-      doubleXp: false
+      doubleXp: false,
+      magnet: false
     };
 
     setGameState(prev => ({
@@ -226,6 +238,7 @@ export const useBattleGame = () => {
         color,
         direction: ['UP', 'DOWN', 'LEFT', 'RIGHT'][Math.floor(Math.random() * 4)] as Direction,
         isDead: false,
+        isBot: true,
         isPlayer: false,
         score: 0,
         level: botLevel,
@@ -233,7 +246,8 @@ export const useBattleGame = () => {
         kills: 0,
         speedBoost: false,
         shield: false,
-        doubleXp: false
+        doubleXp: false,
+        magnet: false
       };
       return { ...prev, snakes: [...prev.snakes, bot] };
     });
@@ -257,7 +271,7 @@ export const useBattleGame = () => {
           expiresAt: Date.now() + 30000
         });
       }
-      return { ...prev, gameStarted: true, waitingForPlayers: false, foods, powerUps, gameTime: 0 };
+      return { ...prev, gameStarted: true, waitingForPlayers: false, foods, powerUps, gameTime: 0, startTime: Date.now() };
     });
     directionRef.current = 'UP';
   }, []);
@@ -279,7 +293,9 @@ export const useBattleGame = () => {
         direction: 'UP' as Direction,
         speedBoost: false,
         shield: false,
-        doubleXp: false
+        doubleXp: false,
+        magnet: false,
+        score: 0, // Reset score maybe? or keep levels? Logic below keeps score/level usually in battle royale but let's reset for new round
       }))
     }));
   }, []);
@@ -290,7 +306,7 @@ export const useBattleGame = () => {
     }
   }, []);
 
-  // Game Loop with dynamic speed
+  // Game Loop
   useEffect(() => {
     if (!gameState.gameStarted || gameState.gameOver) return;
 
@@ -300,7 +316,6 @@ export const useBattleGame = () => {
       setGameState(prev => ({ ...prev, gameTime: prev.gameTime + 1 }));
     }, 1000);
 
-    // Dynamic game loop
     const runGameLoop = () => {
       setGameState(prev => {
         if (!prev.gameStarted || prev.gameOver) return prev;
@@ -338,12 +353,26 @@ export const useBattleGame = () => {
             });
 
             if (nearestFood) {
+              // Simple AI
+              const head = snake.body[0];
+              const dx = nearestFood.x - head.x;
+              const dy = nearestFood.y - head.y;
+
+              // Randomness based on level
               const randomChance = Math.max(0.02, 0.12 - (snake.level * 0.02));
+
               if (Math.random() > randomChance) {
-                if (nearestFood.x > snake.body[0].x && currentDir !== 'LEFT') currentDir = 'RIGHT';
-                else if (nearestFood.x < snake.body[0].x && currentDir !== 'RIGHT') currentDir = 'LEFT';
-                else if (nearestFood.y > snake.body[0].y && currentDir !== 'UP') currentDir = 'DOWN';
-                else if (nearestFood.y < snake.body[0].y && currentDir !== 'DOWN') currentDir = 'UP';
+                if (Math.abs(dx) > Math.abs(dy)) {
+                  if (dx > 0 && currentDir !== 'LEFT') currentDir = 'RIGHT';
+                  else if (dx < 0 && currentDir !== 'RIGHT') currentDir = 'LEFT';
+                  else if (dy > 0 && currentDir !== 'UP') currentDir = 'DOWN';
+                  else if (dy < 0 && currentDir !== 'DOWN') currentDir = 'UP';
+                } else {
+                  if (dy > 0 && currentDir !== 'UP') currentDir = 'DOWN';
+                  else if (dy < 0 && currentDir !== 'DOWN') currentDir = 'UP';
+                  else if (dx > 0 && currentDir !== 'LEFT') currentDir = 'RIGHT';
+                  else if (dx < 0 && currentDir !== 'RIGHT') currentDir = 'LEFT';
+                }
               } else {
                 const dirs: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
                 currentDir = dirs[Math.floor(Math.random() * 4)];
@@ -394,6 +423,18 @@ export const useBattleGame = () => {
                     kills: newSnakes[ki].kills + 1,
                     score: newSnakes[ki].score + 100
                   };
+
+                  // Check Kills Achievement for Player
+                  if (newSnakes[ki].isPlayer) {
+                    const killAch = checkAchievements({
+                      type: 'KILL',
+                      mode: 'battle',
+                      kills: newSnakes[ki].kills // pass total kills in this game
+                    });
+                    if (killAch.length > 0) {
+                      setUnlockedAchievements(prevUn => [...prevUn, ...killAch]);
+                    }
+                  }
                 }
               }
               return { ...snake, isDead: true };
@@ -421,7 +462,7 @@ export const useBattleGame = () => {
               case 'speed': return { ...snake, speedBoost: true, score: snake.score + 25 };
               case 'shield': return { ...snake, shield: true, score: snake.score + 50 };
               case 'doubleXp': return { ...snake, doubleXp: true, score: snake.score + 30 };
-              case 'magnet': return { ...snake, xp: snake.xp + 50, score: snake.score + 40 };
+              case 'magnet': return { ...snake, magnet: true, xp: snake.xp + 50, score: snake.score + 40 };
               case 'bomb':
                 const nb = [...snake.body];
                 for (let i = 0; i < 5; i++) nb.push({ ...snake.body[snake.body.length - 1] });
@@ -472,13 +513,26 @@ export const useBattleGame = () => {
             });
 
             storage.updateStreak();
+
+            // Check Achievements
+            const newAchievements = checkAchievements({
+              type: 'WIN',
+              mode: 'battle',
+              score: totalScore,
+              kills: mySnake.kills,
+              level: mySnake.level,
+              gameTime: Math.floor((Date.now() - (prev.startTime || Date.now())) / 1000)
+            });
+
+            if (newAchievements.length > 0) {
+              setUnlockedAchievements(prevUn => [...prevUn, ...newAchievements]);
+            }
           }
         }
 
         return { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner };
       });
 
-      // Schedule next frame with current speed
       gameLoopRef.current = setTimeout(runGameLoop, speedRef.current);
     };
 
@@ -502,5 +556,16 @@ export const useBattleGame = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, [changeDirection]);
 
-  return { gameState, changeDirection, createRoom, joinRoom, startGame, resetGame, getXpForNextLevel, SNAKE_COLORS };
+  return {
+    gameState,
+    changeDirection,
+    createRoom,
+    joinRoom,
+    startGame,
+    resetGame,
+    getXpForNextLevel,
+    SNAKE_COLORS,
+    unlockedAchievements,
+    clearAchievements: () => setUnlockedAchievements([])
+  };
 };

@@ -1,15 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
-import { useSnakeGame } from '../hooks/useSnakeGame.ts';
+import { useSnakeGame } from '../hooks/useSnakeGame';
 import GameCanvas from './GameCanvas';
 import SwipeControls from './SwipeControls';
 import ScoreBoard from './ScoreBoard';
 import GameInstructions from './GameInstructions';
 import SoundToggle from './SoundToggle';
 import PowerUpInfo from './PowerUpInfo';
-import Settings from './Settings.tsx';
-import { HelpCircle, Settings as SettingsIcon, ArrowLeft, Play, Pause, PenTool, Save } from 'lucide-react';
-import { Difficulty, Position, Direction } from '../types/game.ts';
-import { GRID_SIZE } from '../utils/gameLogic.ts';
+import Settings from './Settings';
+import AchievementToast from './AchievementToast';
+import { HelpCircle, Settings as SettingsIcon, ArrowLeft, Play, Pause, Save } from 'lucide-react';
+import { Difficulty, Position, Direction } from '../types/game';
+import { GRID_SIZE } from '../utils/gameLogic';
+import { Achievement } from '../data/achievements';
 
 interface GameProps {
   onBack: () => void;
@@ -17,11 +20,16 @@ interface GameProps {
 }
 
 const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
-  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound, difficulty, setDifficulty, settings, updateSettings, isPaused, togglePause, loadCustomLevel } = useSnakeGame();
+  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound, difficulty, setDifficulty, settings, updateSettings, isPaused, togglePause, loadCustomLevel, unlockedAchievements, clearAchievements } = useSnakeGame();
+
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isEditing, setIsEditing] = useState(isCreative);
   const [customObstacles, setCustomObstacles] = useState<Position[]>([]);
+
+  // Achievement Toast Queue
+  const [achievementQueue, setAchievementQueue] = useState<Achievement[]>([]);
+  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
 
   useEffect(() => {
     setIsEditing(isCreative);
@@ -33,6 +41,22 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
       setCustomObstacles(JSON.parse(savedLevel));
     }
   }, [isCreative]);
+
+  // Handle new achievements
+  useEffect(() => {
+    if (unlockedAchievements && unlockedAchievements.length > 0) {
+      setAchievementQueue(prev => [...prev, ...unlockedAchievements]);
+      clearAchievements();
+    }
+  }, [unlockedAchievements, clearAchievements]);
+
+  // Process achievement queue
+  useEffect(() => {
+    if (!currentAchievement && achievementQueue.length > 0) {
+      setCurrentAchievement(achievementQueue[0]);
+      setAchievementQueue(prev => prev.slice(1));
+    }
+  }, [achievementQueue, currentAchievement]);
 
   const handleToggleObstacle = (x: number, y: number) => {
     setCustomObstacles(prev => {
@@ -67,7 +91,7 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
 
   return (
     <div className={`flex flex-col items-center justify-center min-h-screen sm:p-4 ${gameState.gameStarted && !isEditing ? 'cursor-none' : ''}`}>
-      <div className="w-full sm:max-w-md h-full sm:h-auto flex flex-col">
+      <div className="w-full sm:max-w-md h-full sm:h-auto flex flex-col relative">
         {isEditing ? (
           <div className="p-4 w-full">
             <div className="flex items-center justify-between mb-4">
@@ -112,35 +136,40 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
               })}
             </div>
           </div>
-        ) : !gameState.gameStarted && (
-          <div className="p-4">
+        ) : (
+          /* REGULAR GAME MODE */
+          <div className="p-4 flex-1 flex flex-col">
             <div className="flex items-center justify-between mb-2">
-              <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white">
+              <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700 text-white z-20">
                 <ArrowLeft size={20} />
               </button>
-              <h1 className="text-3xl font-bold text-center text-white">
-                Classic Mode
-              </h1>
+              {!gameState.gameStarted && (
+                <h1 className="text-3xl font-bold text-center text-white">
+                  Classic Mode
+                </h1>
+              )}
               <div className="w-8"></div>
             </div>
 
-            <div className="flex justify-center items-center gap-4 mb-4">
-              <SoundToggle soundEnabled={soundEnabled} onToggle={toggleSound} />
-              <button
-                onClick={() => setShowInstructions(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors bg-gray-800 text-white hover:bg-gray-700"
-              >
-                <HelpCircle size={20} />
-                How to Play
-              </button>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors bg-gray-800 text-white hover:bg-gray-700"
-              >
-                <SettingsIcon size={20} />
-                Settings
-              </button>
-            </div>
+            {!gameState.gameStarted && (
+              <div className="flex justify-center items-center gap-4 mb-4">
+                <SoundToggle soundEnabled={soundEnabled} onToggle={toggleSound} />
+                <button
+                  onClick={() => setShowInstructions(true)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors bg-gray-800 text-white hover:bg-gray-700"
+                >
+                  <HelpCircle size={20} />
+                  How to Play
+                </button>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors bg-gray-800 text-white hover:bg-gray-700"
+                >
+                  <SettingsIcon size={20} />
+                  Settings
+                </button>
+              </div>
+            )}
 
             {!gameState.gameStarted && (
               <div className="flex justify-center items-center gap-2 mb-4">
@@ -150,8 +179,8 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
                     onClick={() => handleDifficultyChange(level)}
                     disabled={gameState.gameStarted}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${difficulty === level
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-white hover:bg-gray-600'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-white hover:bg-gray-600'
                       } ${gameState.gameStarted ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     {level}
@@ -172,69 +201,75 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
               powerUpEndTime={gameState.powerUpEndTime}
             />
 
-            <div className="flex justify-center mt-4">
-              <button
-                onClick={startGame}
-                className="flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-2xl transition-all hover:scale-105 shadow-lg"
-              >
-                <Play size={28} fill="currentColor" />
-                Start Game
-              </button>
-            </div>
-          </div>
-        )}
+            <div className="flex-1 flex items-center justify-center mt-4 relative">
 
-        {!isEditing && (
-          <div className="flex-grow flex items-center justify-center">
-            {gameState.gameStarted && (
-              <>
-                <button onClick={onBack} className="absolute top-4 left-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 z-10">
-                  <ArrowLeft size={24} />
+              {/* Back/Pause buttons during game */}
+              {gameState.gameStarted && (
+                <>
+                  {/* Controls overlay already in Canvas or UI? using absolute here */}
+                </>
+              )}
+
+              <SwipeControls onSwipe={handleSwipe}>
+                <GameCanvas gameState={gameState} onStart={startGame} onRestart={resetGame} />
+              </SwipeControls>
+
+              {/* Pause Button Overlay */}
+              {gameState.gameStarted && !gameState.gameOver && (
+                <button
+                  onClick={togglePause}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-gray-800/80 hover:bg-gray-700 text-white border border-gray-600 z-10"
+                >
+                  {isPaused ? <Play size={20} /> : <Pause size={20} />}
                 </button>
-                {!gameState.gameOver && (
-                  <button onClick={togglePause} className="absolute top-4 right-4 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 z-10">
-                    {isPaused ? <Play size={24} /> : <Pause size={24} />}
-                  </button>
-                )}
-              </>
+              )}
+            </div>
+
+            {!gameState.gameStarted && !gameState.gameOver && (
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={startGame}
+                  className="flex items-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-2xl transition-all hover:scale-105 shadow-lg"
+                >
+                  <Play size={28} fill="currentColor" />
+                  Start Game
+                </button>
+              </div>
             )}
-            <SwipeControls onSwipe={handleSwipe}>
-              <GameCanvas gameState={gameState} onStart={startGame} onRestart={resetGame} />
-            </SwipeControls>
           </div>
         )}
 
         {isPaused && !gameState.gameOver && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 backdrop-blur-sm">
-            <div className="text-white text-4xl font-bold tracking-wider">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 backdrop-blur-sm pointer-events-none">
+            <div className="text-white text-4xl font-bold tracking-wider pointer-events-auto">
               PAUSED
             </div>
           </div>
         )}
 
         {showInstructions && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="relative rounded-lg p-6 max-w-lg w-full bg-gray-900 border border-gray-700">
-              <GameInstructions />
-              <button
-                onClick={() => setShowInstructions(false)}
-                className="absolute top-3 right-3 px-3 py-1 rounded-full bg-red-500 text-white hover:bg-red-600"
-              >
-                Close
-              </button>
-            </div>
-          </div>
+          <GameInstructions onClose={() => setShowInstructions(false)} />
         )}
 
         {showSettings && (
           <Settings
-            onClose={() => setShowSettings(false)}
             settings={settings}
             onSettingsChange={updateSettings}
+            onClose={() => setShowSettings(false)}
           />
         )}
+
+        <AchievementToast
+          achievement={currentAchievement ? {
+            name: currentAchievement.name,
+            icon: currentAchievement.icon,
+            coins: currentAchievement.reward.coins
+          } : null}
+          onClose={() => setCurrentAchievement(null)}
+        />
       </div>
     </div>
   );
 };
+
 export default Game;

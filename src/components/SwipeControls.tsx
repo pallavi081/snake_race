@@ -40,7 +40,7 @@ const SwipeControls: React.FC<SwipeControlsProps> = ({ onSwipe, children }) => {
   };
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} style={{ touchAction: 'none' }}>
       {children}
     </div>
   );

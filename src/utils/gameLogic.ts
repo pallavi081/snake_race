@@ -1,4 +1,4 @@
-import { Position, Direction, GameState, PowerUp, PowerUpType, Particle, Difficulty } from '../types/game.ts';
+import { Position, Direction, GameState, PowerUp, PowerUpType, Particle, Difficulty } from '../types/game';
 
 export const GRID_SIZE = 20;
 export const SPEED_INCREMENT = 10;
@@ -24,7 +24,7 @@ export const POWER_UP_SPAWN_CHANCE = 0.15; // 15% chance
 export const generateFood = (snake: Position[], canvasWidth: number, canvasHeight: number): Position => {
   const maxX = Math.floor(canvasWidth / GRID_SIZE);
   const maxY = Math.floor(canvasHeight / GRID_SIZE);
-  
+
   let food: Position;
   do {
     food = {
@@ -32,16 +32,16 @@ export const generateFood = (snake: Position[], canvasWidth: number, canvasHeigh
       y: Math.floor(Math.random() * maxY)
     };
   } while (snake.some(segment => segment.x === food.x && segment.y === food.y));
-  
+
   return food;
 };
 
 export const generatePowerUp = (snake: Position[], food: Position, canvasWidth: number, canvasHeight: number): PowerUp | null => {
   if (Math.random() > POWER_UP_SPAWN_CHANCE) return null;
-  
+
   const maxX = Math.floor(canvasWidth / GRID_SIZE);
   const maxY = Math.floor(canvasHeight / GRID_SIZE);
-  
+
   let position: Position;
   do {
     position = {
@@ -52,7 +52,7 @@ export const generatePowerUp = (snake: Position[], food: Position, canvasWidth: 
     snake.some(segment => segment.x === position.x && segment.y === position.y) ||
     (position.x === food.x && position.y === food.y)
   );
-  
+
   return {
     position,
     type: POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)],
@@ -91,7 +91,7 @@ export const updateParticles = (particles: Particle[]): Particle[] => {
 
 export const moveSnake = (snake: Position[], direction: Direction): Position[] => {
   const head = { ...snake[0] };
-  
+
   switch (direction) {
     case 'UP':
       head.y -= 1;
@@ -106,20 +106,20 @@ export const moveSnake = (snake: Position[], direction: Direction): Position[] =
       head.x += 1;
       break;
   }
-  
+
   return [head, ...snake.slice(0, -1)];
 };
 
 export const checkWallCollision = (head: Position, canvasWidth: number, canvasHeight: number): boolean => {
   const maxX = Math.floor(canvasWidth / GRID_SIZE);
   const maxY = Math.floor(canvasHeight / GRID_SIZE);
-  
+
   return head.x < 0 || head.x >= maxX || head.y < 0 || head.y >= maxY;
 };
 
 export const checkSelfCollision = (snake: Position[]): boolean => {
   const head = snake[0];
-  return snake.slice(1).some(segment => 
+  return snake.slice(1).some(segment =>
     segment.x === head.x && segment.y === head.y
   );
 };
@@ -129,7 +129,7 @@ export const checkFoodCollision = (head: Position, food: Position): boolean => {
 };
 
 export const checkPowerUpCollision = (head: Position, powerUps: PowerUp[]): PowerUp | null => {
-  return powerUps.find(powerUp => 
+  return powerUps.find(powerUp =>
     powerUp.position.x === head.x && powerUp.position.y === head.y
   ) || null;
 };
@@ -142,10 +142,10 @@ export const calculateScore = (baseScore: number, combo: number, level: number):
 
 export const getGameSpeed = (level: number, powerUp: PowerUpType | null, difficulty: Difficulty): number => {
   let speed = BASE_SPEEDS[difficulty] - (level - 1) * SPEED_INCREMENT;
-  
+
   if (powerUp === 'speed') speed *= 0.6;
   if (powerUp === 'slow') speed *= 1.5;
-  
+
   return Math.max(speed, 50); // Minimum speed limit
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Play, Users, Copy, Share2, Loader2, Lock, Globe, Clock } from 'lucide-react';
 import { useBattleGame, SNAKE_COLORS } from './useBattleGame';
@@ -6,19 +7,25 @@ import SwipeControls from './SwipeControls';
 import { Direction } from '../types/game';
 import storage from '../utils/storage';
 import { getThemeById } from '../data/skins';
+import AchievementToast from './AchievementToast';
+import { Achievement } from '../data/achievements';
 
 interface BattleGameProps {
   onBack: () => void;
 }
 
 const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
-  const { gameState, changeDirection, createRoom, joinRoom, startGame, resetGame, getXpForNextLevel } = useBattleGame();
+  const { gameState, changeDirection, createRoom, joinRoom, startGame, resetGame, getXpForNextLevel, unlockedAchievements, clearAchievements } = useBattleGame();
   const [playerName, setPlayerName] = useState('');
   const [selectedColor, setSelectedColor] = useState(SNAKE_COLORS[0].color);
   const [inputRoomId, setInputRoomId] = useState('');
   const [mode, setMode] = useState<'name' | 'menu' | 'lobby' | 'game'>('name');
   const [copied, setCopied] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
+
+  // Achievement Queue
+  const [achievementQueue, setAchievementQueue] = useState<Achievement[]>([]);
+  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
 
   // Get theme from storage
   const selectedTheme = storage.getPlayer().selectedTheme;
@@ -33,6 +40,22 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   useEffect(() => {
     if (gameState.gameStarted) setMode('game');
   }, [gameState.gameStarted]);
+
+  // Handle new achievements
+  useEffect(() => {
+    if (unlockedAchievements && unlockedAchievements.length > 0) {
+      setAchievementQueue(prev => [...prev, ...unlockedAchievements]);
+      clearAchievements();
+    }
+  }, [unlockedAchievements, clearAchievements]);
+
+  // Process queue
+  useEffect(() => {
+    if (!currentAchievement && achievementQueue.length > 0) {
+      setCurrentAchievement(achievementQueue[0]);
+      setAchievementQueue(prev => prev.slice(1));
+    }
+  }, [achievementQueue, currentAchievement]);
 
   const handleSwipe = (direction: Direction) => changeDirection(direction);
 
@@ -90,7 +113,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen p-3 bg-gray-900 text-white">
+    <div className="flex flex-col items-center min-h-screen p-3 bg-gray-900 text-white relative">
       {/* Header */}
       <div className="w-full max-w-lg mb-3 flex items-center justify-between">
         <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-700">
@@ -317,6 +340,15 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
           )}
         </div>
       )}
+
+      <AchievementToast
+        achievement={currentAchievement ? {
+          name: currentAchievement.name,
+          icon: currentAchievement.icon,
+          coins: currentAchievement.reward.coins
+        } : null}
+        onClose={() => setCurrentAchievement(null)}
+      />
     </div>
   );
 };
