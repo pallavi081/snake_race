@@ -22,6 +22,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   const [mode, setMode] = useState<'name' | 'menu' | 'lobby' | 'game'>('name');
   const [copied, setCopied] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null); // Track if joining via shared link
 
   // Achievement Queue
   const [achievementQueue, setAchievementQueue] = useState<Achievement[]>([]);
@@ -34,7 +35,11 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
-    if (roomParam) setInputRoomId(roomParam.toUpperCase());
+    if (roomParam) {
+      const roomCode = roomParam.toUpperCase();
+      setInputRoomId(roomCode);
+      setJoiningRoomId(roomCode); // Mark that we're joining via link
+    }
   }, []);
 
   useEffect(() => {
@@ -64,7 +69,16 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
       alert('Please enter your name');
       return;
     }
-    setMode('menu');
+
+    // If we have a room to join from URL, skip menu and join directly
+    if (joiningRoomId) {
+      joinRoom(playerName, selectedColor, joiningRoomId);
+      setMode('lobby');
+      // Clear URL param after joining
+      window.history.replaceState({}, '', window.location.pathname);
+    } else {
+      setMode('menu');
+    }
   };
 
   const handleCreateRoom = () => {

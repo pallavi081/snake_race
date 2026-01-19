@@ -524,27 +524,31 @@ export const useBattleGame = () => {
           return { ...snake, body: [head, ...snake.body], direction: currentDir };
         });
 
-        // Collision detection
+        // Collision detection - using newSnakes for accurate position checking
         newSnakes = newSnakes.map(snake => {
           if (snake.isDead) return snake;
           const head = snake.body[0];
 
+          // Wall collision
           if (checkWallCollision(head, prev.canvasWidth, prev.canvasHeight)) {
             if (snake.shield) return { ...snake, shield: false };
             return { ...snake, isDead: true };
           }
 
-          for (const other of prev.snakes) {
+          // Collision with other snakes (using updated positions)
+          for (const other of newSnakes) {
             if (other.isDead) continue;
             const hit = other.body.some((seg, idx) => {
-              if (other.id === snake.id && idx === 0) return false;
+              // Skip first 3 segments for self-collision to prevent false deaths during turns
+              if (other.id === snake.id && idx < 3) return false;
               return seg.x === head.x && seg.y === head.y;
             });
             if (hit) {
               if (snake.shield) return { ...snake, shield: false };
+              // Credit kill to the other snake if it's different
               if (other.id !== snake.id) {
                 const ki = newSnakes.findIndex(s => s.id === other.id);
-                if (ki !== -1) {
+                if (ki !== -1 && !newSnakes[ki].isDead) {
                   newSnakes[ki] = {
                     ...newSnakes[ki],
                     kills: newSnakes[ki].kills + 1,
@@ -588,13 +592,25 @@ export const useBattleGame = () => {
           return snake;
         });
 
-        // Winner check
+        // Winner check - calculate final scores with size and time bonuses
         const alive = newSnakes.filter(s => !s.isDead);
         let winner = prev.winner;
-        let gameOver = prev.gameOver;
+        let gameOver: boolean = prev.gameOver;
 
         if (alive.length === 1 && prev.snakes.length > 1) {
-          winner = alive[0].name;
+          // Calculate final score with size (body length) and survival time bonuses
+          const winnerSnake = alive[0];
+          const sizeBonus = winnerSnake.body.length * 5;
+          const timeBonus = prev.gameTime * 2;
+          const totalScore = winnerSnake.score + sizeBonus + timeBonus + 500; // +500 for winning
+
+          // Update winner's final score
+          const winnerIdx = newSnakes.findIndex(s => s.id === winnerSnake.id);
+          if (winnerIdx !== -1) {
+            newSnakes[winnerIdx] = { ...newSnakes[winnerIdx], score: totalScore };
+          }
+
+          winner = winnerSnake.name;
           gameOver = true;
         } else if (alive.length === 0) {
           gameOver = true;
