@@ -171,20 +171,7 @@ const PuzzleGame: React.FC<PuzzleGameProps> = ({ onBack, isCreative = false }) =
           </>
         )}
 
-        {/* On-screen buttons for mobile - Only show when playing */}
-        {!isEditing && (
-          <div className="grid grid-cols-3 gap-3 mt-4 md:hidden">
-            <div></div>
-            <button className={buttonClass} onClick={() => handleSwipe('UP')}><ChevronUp size={32} /></button>
-            <div></div>
-            <button className={buttonClass} onClick={() => handleSwipe('LEFT')}><ChevronLeft size={32} /></button>
-            <div></div>
-            <button className={buttonClass} onClick={() => handleSwipe('RIGHT')}><ChevronRight size={32} /></button>
-            <div></div>
-            <button className={buttonClass} onClick={() => handleSwipe('DOWN')}><ChevronDown size={32} /></button>
-            <div></div>
-          </div>
-        )}
+        {/* Mobile: Use swipe gestures instead of on-screen buttons */}
 
         {showInstructions && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

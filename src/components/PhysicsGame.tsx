@@ -175,34 +175,7 @@ const PhysicsGame: React.FC<PhysicsGameProps> = ({ onBack, isCreative = false })
         </div>
       )}
 
-      {/* Mobile Controls */}
-      {!isEditing && (
-        <div className="flex items-center gap-4 mt-6 md:hidden w-full max-w-md justify-center">
-          <button
-            className="p-6 rounded-full bg-gray-700 bg-opacity-50 text-white active:bg-gray-600"
-            onTouchStart={() => moveHorizontal('LEFT')}
-            onTouchEnd={stopHorizontal}
-          >
-            <ChevronLeft size={32} />
-          </button>
-
-          <button
-            className="p-8 rounded-full bg-blue-600 bg-opacity-80 text-white active:bg-blue-500 mx-4"
-            onTouchStart={jump}
-            onClick={jump}
-          >
-            <ArrowUp size={40} />
-          </button>
-
-          <button
-            className="p-6 rounded-full bg-gray-700 bg-opacity-50 text-white active:bg-gray-600"
-            onTouchStart={() => moveHorizontal('RIGHT')}
-            onTouchEnd={stopHorizontal}
-          >
-            <ChevronRight size={32} />
-          </button>
-        </div>
-      )}
+      {/* Mobile: Tap canvas to jump, swipe left/right to move */}
 
       {showInstructions && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
