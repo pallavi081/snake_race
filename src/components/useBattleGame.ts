@@ -1,9 +1,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Peer, { DataConnection } from 'peerjs';
 import { Position, Direction } from '../types/game';
 import { checkWallCollision, getOppositeDirection, GRID_SIZE } from '../utils/gameLogic';
-import storage from '../utils/storage';
-import { checkAchievements, GameEvent } from '../utils/achievementLogic';
 import { Achievement } from '../data/achievements';
 
 export interface Snake {
@@ -48,18 +47,24 @@ export interface BattleGameState {
   myId: string | null;
   isConnected: boolean;
   isPrivate: boolean;
-  gameTime: number; // seconds since game started
-  startTime?: number; // timestamp
+  gameTime: number;
+  startTime?: number;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+  connectedPeers: number;
 }
 
-// Larger map for battle royale feel
+interface PeerMessage {
+  type: 'JOIN' | 'PLAYER_LIST' | 'GAME_STATE' | 'DIRECTION' | 'START' | 'PLAYER_LEFT';
+  payload: any;
+  senderId: string;
+}
+
 const BOARD_WIDTH = 1200;
 const BOARD_HEIGHT = 900;
 const INITIAL_SNAKE_LENGTH = 5;
-const BOT_NAMES = ['Viper', 'Python', 'Cobra', 'Anaconda', 'Mamba', 'Sidewinder', 'Rattler', 'Boa', 'Asp', 'Krait'];
+const POWER_UP_TYPES: PowerUpType[] = ['speed', 'shield', 'doubleXp', 'magnet', 'bomb'];
 const POWER_UP_TYPES: PowerUpType[] = ['speed', 'shield', 'doubleXp', 'magnet', 'bomb'];
 
-// Snake color options
 export const SNAKE_COLORS = [
   { name: 'Green', color: '#22c55e' },
   { name: 'Blue', color: '#3b82f6' },
@@ -71,13 +76,9 @@ export const SNAKE_COLORS = [
   { name: 'Yellow', color: '#eab308' },
 ];
 
-// Level thresholds
 const LEVEL_XP = [0, 100, 250, 500, 800, 1200, 1700, 2500, 3500, 5000];
-
-// Speed settings
 const BASE_SPEED = 180;
 const MIN_SPEED = 80;
-const SPEED_DECREASE_PER_SECOND = 2;
 
 export const useBattleGame = () => {
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
@@ -97,26 +98,16 @@ export const useBattleGame = () => {
     isPrivate: false,
     gameTime: 0,
     startTime: 0,
+    connectionStatus: 'disconnected',
+    connectedPeers: 0,
   });
 
+  const peerRef = useRef<Peer | null>(null);
+  const connectionsRef = useRef<Map<string, DataConnection>>(new Map());
+  const isHostRef = useRef(false);
   const directionRef = useRef<Direction>('UP');
-  const botIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const speedRef = useRef(BASE_SPEED);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setGameState(prev => ({ ...prev, isConnected: true }));
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (botIntervalRef.current) clearInterval(botIntervalRef.current);
-      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-    };
-  }, []);
 
   const generateRandomPosition = (): Position => ({
     x: Math.floor(Math.random() * (BOARD_WIDTH / GRID_SIZE)),
@@ -143,142 +134,295 @@ export const useBattleGame = () => {
     return LEVEL_XP[level];
   };
 
+  // Send message to all peers
+  const broadcast = useCallback((message: Omit<PeerMessage, 'senderId'>) => {
+    const fullMessage = { ...message, senderId: gameState.myId || 'unknown' };
+    connectionsRef.current.forEach((conn) => {
+      if (conn.open) conn.send(fullMessage);
+    });
+  }, [gameState.myId]);
+
+  // Handle incoming messages
+  const handleMessage = useCallback((message: PeerMessage) => {
+    console.log('📨 Message:', message.type, message.payload);
+
+    switch (message.type) {
+      case 'JOIN':
+        // New player joined (host only)
+        if (isHostRef.current) {
+          const { name, color, peerId } = message.payload;
+          const startPos = generateRandomPosition();
+          const newSnake: Snake = {
+            id: peerId,
+            name,
+            color,
+            body: createInitialSnake(startPos),
+            direction: 'UP',
+            isDead: false,
+            isBot: false,
+            isPlayer: false,
+            score: 0,
+            level: 1,
+            xp: 0,
+            kills: 0,
+            shield: false,
+            speedBoost: false,
+            doubleXp: false,
+            magnet: false
+          };
+
+          setGameState(prev => {
+            const updated = { ...prev, snakes: [...prev.snakes, newSnake], connectedPeers: prev.connectedPeers + 1 };
+            // Send full player list to all
+            setTimeout(() => {
+              broadcast({ type: 'PLAYER_LIST', payload: updated.snakes });
+            }, 100);
+            return updated;
+          });
+        }
+        break;
+
+      case 'PLAYER_LIST':
+        // Received player list from host
+        setGameState(prev => ({
+          ...prev,
+          snakes: message.payload,
+          connectedPeers: message.payload.length - 1
+        }));
+        break;
+
+      case 'GAME_STATE':
+        // Full game state sync (clients receive this from host)
+        if (!isHostRef.current) {
+          setGameState(prev => ({
+            ...prev,
+            ...message.payload,
+            myId: prev.myId // Keep our ID
+          }));
+        }
+        break;
+
+      case 'DIRECTION':
+        // Player changed direction
+        const { playerId, direction } = message.payload;
+        setGameState(prev => ({
+          ...prev,
+          snakes: prev.snakes.map(s =>
+            s.id === playerId ? { ...s, direction } : s
+          )
+        }));
+        break;
+
+      case 'START':
+        setGameState(prev => ({ ...prev, gameStarted: true, waitingForPlayers: false }));
+        break;
+
+      case 'PLAYER_LEFT':
+        setGameState(prev => ({
+          ...prev,
+          snakes: prev.snakes.filter(s => s.id !== message.payload.peerId),
+          connectedPeers: Math.max(0, prev.connectedPeers - 1)
+        }));
+        break;
+    }
+  }, [broadcast]);
+
+  // Setup connection handlers
+  const setupConnection = useCallback((conn: DataConnection) => {
+    conn.on('open', () => {
+      console.log('✅ Connected to:', conn.peer);
+      connectionsRef.current.set(conn.peer, conn);
+      setGameState(prev => ({ ...prev, connectionStatus: 'connected', isConnected: true }));
+    });
+
+    conn.on('data', (data) => handleMessage(data as PeerMessage));
+
+    conn.on('close', () => {
+      console.log('🚪 Disconnected:', conn.peer);
+      connectionsRef.current.delete(conn.peer);
+      if (isHostRef.current) {
+        broadcast({ type: 'PLAYER_LEFT', payload: { peerId: conn.peer } });
+      }
+      setGameState(prev => ({
+        ...prev,
+        snakes: prev.snakes.filter(s => s.id !== conn.peer),
+        connectedPeers: connectionsRef.current.size
+      }));
+    });
+  }, [handleMessage, broadcast]);
+
+  // Create room (become host)
   const createRoom = useCallback((playerName: string, playerColor: string, isPrivate: boolean = false) => {
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const myId = 'player-' + Date.now();
-    const startPos = generateRandomPosition();
+    const myId = `host-${roomId}`;
+    isHostRef.current = true;
 
-    const playerSnake: Snake = {
-      id: myId,
-      name: playerName,
-      body: createInitialSnake(startPos),
-      color: playerColor,
-      direction: 'UP',
-      isDead: false,
-      isBot: false,
-      isPlayer: true,
-      score: 0,
-      level: 1,
-      xp: 0,
-      kills: 0,
-      speedBoost: false,
-      shield: false,
-      doubleXp: false,
-      magnet: false
-    };
+    setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
 
-    setGameState(prev => ({
-      ...prev,
-      roomId,
-      myId,
-      snakes: [playerSnake],
-      waitingForPlayers: true,
-      isPrivate,
-      gameTime: 0
-    }));
+    // Create peer with room ID
+    const peer = new Peer(`snake-${roomId}`, {
+      debug: 1,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ]
+      }
+    });
 
-    if (!isPrivate) {
-      let botCount = 0;
-      botIntervalRef.current = setInterval(() => {
-        if (botCount >= 5) {
-          if (botIntervalRef.current) clearInterval(botIntervalRef.current);
-          return;
-        }
-        addBot();
-        botCount++;
-      }, 800);
-    }
-  }, []);
+    peerRef.current = peer;
 
-  const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string) => {
-    const myId = 'player-' + Date.now();
-    const startPos = generateRandomPosition();
+    peer.on('open', (id) => {
+      console.log('🎮 Host peer opened:', id);
 
-    const playerSnake: Snake = {
-      id: myId,
-      name: playerName,
-      body: createInitialSnake(startPos),
-      color: playerColor,
-      direction: 'UP',
-      isDead: false,
-      isBot: false,
-      isPlayer: true,
-      score: 0,
-      level: 1,
-      xp: 0,
-      kills: 0,
-      speedBoost: false,
-      shield: false,
-      doubleXp: false,
-      magnet: false
-    };
-
-    setGameState(prev => ({
-      ...prev,
-      roomId,
-      myId,
-      snakes: [...prev.snakes, playerSnake],
-      waitingForPlayers: true
-    }));
-  }, []);
-
-  const addBot = () => {
-    setGameState(prev => {
-      if (prev.gameStarted || prev.isPrivate) return prev;
-      const name = BOT_NAMES[Math.floor(Math.random() * BOT_NAMES.length)];
-      const colorIdx = (prev.snakes.length) % SNAKE_COLORS.length;
-      const color = SNAKE_COLORS[colorIdx].color;
       const startPos = generateRandomPosition();
-      const botLevel = Math.floor(Math.random() * 3) + 1;
-
-      const bot: Snake = {
-        id: `bot-${Date.now()}-${Math.random()}`,
-        name,
+      const playerSnake: Snake = {
+        id: myId,
+        name: playerName,
         body: createInitialSnake(startPos),
-        color,
-        direction: ['UP', 'DOWN', 'LEFT', 'RIGHT'][Math.floor(Math.random() * 4)] as Direction,
+        color: playerColor,
+        direction: 'UP',
         isDead: false,
-        isBot: true,
-        isPlayer: false,
+        isBot: false,
+        isPlayer: true,
         score: 0,
-        level: botLevel,
-        xp: LEVEL_XP[botLevel - 1] || 0,
+        level: 1,
+        xp: 0,
         kills: 0,
-        speedBoost: false,
         shield: false,
+        speedBoost: false,
         doubleXp: false,
         magnet: false
       };
-      return { ...prev, snakes: [...prev.snakes, bot] };
-    });
-  };
 
+      setGameState(prev => ({
+        ...prev,
+        roomId,
+        myId,
+        snakes: [playerSnake],
+        waitingForPlayers: true,
+        isPrivate,
+        isConnected: true,
+        connectionStatus: 'connected',
+        gameTime: 0
+      }));
+    });
+
+    peer.on('connection', (conn) => {
+      console.log('🔗 Incoming connection:', conn.peer);
+      setupConnection(conn);
+    });
+
+    peer.on('error', (err) => {
+      console.error('❌ Peer error:', err);
+      setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
+    });
+
+    return roomId;
+  }, [setupConnection]);
+
+  // Join room
+  const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string) => {
+    const myId = `player-${Date.now()}`;
+    isHostRef.current = false;
+
+    setGameState(prev => ({ ...prev, connectionStatus: 'connecting', roomId, myId }));
+
+    const peer = new Peer(myId, {
+      debug: 1,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ]
+      }
+    });
+
+    peerRef.current = peer;
+
+    peer.on('open', () => {
+      console.log('🎮 Client peer opened, connecting to host...');
+      const conn = peer.connect(`snake-${roomId}`, { reliable: true });
+      setupConnection(conn);
+
+      conn.on('open', () => {
+        // Send join message to host
+        conn.send({
+          type: 'JOIN',
+          payload: { name: playerName, color: playerColor, peerId: myId },
+          senderId: myId
+        });
+
+        setGameState(prev => ({
+          ...prev,
+          waitingForPlayers: true,
+          isConnected: true,
+          connectionStatus: 'connected'
+        }));
+      });
+    });
+
+    peer.on('error', (err) => {
+      console.error('❌ Join error:', err);
+      if (err.type === 'peer-unavailable') {
+        alert('Room not found. Check the Room ID or the host may have left.');
+      }
+      setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
+    });
+  }, [setupConnection]);
+
+  // Start game (host only)
   const startGame = useCallback(() => {
-    if (botIntervalRef.current) clearInterval(botIntervalRef.current);
+    if (!isHostRef.current) return;
+
     speedRef.current = BASE_SPEED;
 
-    setGameState(prev => {
-      const foods: Position[] = [];
-      for (let i = 0; i < 40; i++) {
-        foods.push(generateRandomPosition());
-      }
-      const powerUps: PowerUp[] = [];
-      for (let i = 0; i < 5; i++) {
-        powerUps.push({
-          id: `powerup-${Date.now()}-${i}`,
-          position: generateRandomPosition(),
-          type: POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)],
-          expiresAt: Date.now() + 30000
-        });
-      }
-      return { ...prev, gameStarted: true, waitingForPlayers: false, foods, powerUps, gameTime: 0, startTime: Date.now() };
-    });
-    directionRef.current = 'UP';
-  }, []);
+    // Generate initial food and power-ups
+    const foods: Position[] = [];
+    for (let i = 0; i < 40; i++) foods.push(generateRandomPosition());
 
+    const powerUps: PowerUp[] = [];
+    for (let i = 0; i < 5; i++) {
+      powerUps.push({
+        id: `powerup-${Date.now()}-${i}`,
+        position: generateRandomPosition(),
+        type: POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)],
+        expiresAt: Date.now() + 30000
+      });
+    }
+
+    setGameState(prev => ({
+      ...prev,
+      gameStarted: true,
+      waitingForPlayers: false,
+      foods,
+      powerUps,
+      gameTime: 0,
+      startTime: Date.now()
+    }));
+
+    // Tell all clients to start
+    broadcast({ type: 'START', payload: {} });
+  }, [broadcast]);
+
+  // Change direction
+  const changeDirection = useCallback((newDirection: Direction) => {
+    if (getOppositeDirection(directionRef.current) !== newDirection) {
+      directionRef.current = newDirection;
+
+      // Broadcast direction change to all peers
+      broadcast({
+        type: 'DIRECTION',
+        payload: { playerId: gameState.myId, direction: newDirection }
+      });
+    }
+  }, [broadcast, gameState.myId]);
+
+  // Reset game
   const resetGame = useCallback(() => {
     if (gameLoopRef.current) clearInterval(gameLoopRef.current);
     speedRef.current = BASE_SPEED;
+
     setGameState(prev => ({
       ...prev,
       gameStarted: false,
@@ -295,24 +439,17 @@ export const useBattleGame = () => {
         shield: false,
         doubleXp: false,
         magnet: false,
-        score: 0, // Reset score maybe? or keep levels? Logic below keeps score/level usually in battle royale but let's reset for new round
+        score: 0,
       }))
     }));
   }, []);
 
-  const changeDirection = useCallback((newDirection: Direction) => {
-    if (getOppositeDirection(directionRef.current) !== newDirection) {
-      directionRef.current = newDirection;
-    }
-  }, []);
-
-  // Game Loop
+  // Game Loop (HOST ONLY runs the game loop and syncs state to clients)
   useEffect(() => {
-    if (!gameState.gameStarted || gameState.gameOver) return;
+    if (!gameState.gameStarted || gameState.gameOver || !isHostRef.current) return;
 
-    // Speed increases over time
     const speedInterval = setInterval(() => {
-      speedRef.current = Math.max(MIN_SPEED, speedRef.current - SPEED_DECREASE_PER_SECOND);
+      speedRef.current = Math.max(MIN_SPEED, speedRef.current - 2);
       setGameState(prev => ({ ...prev, gameTime: prev.gameTime + 1 }));
     }, 1000);
 
@@ -320,13 +457,12 @@ export const useBattleGame = () => {
       setGameState(prev => {
         if (!prev.gameStarted || prev.gameOver) return prev;
 
-        // Auto-spawn food
+        // Game logic (same as before but simplified)
         let newFoods = [...prev.foods];
         if (newFoods.length < 40 && Math.random() < 0.15) {
           newFoods.push(generateRandomPosition());
         }
 
-        // Auto-spawn power-ups
         let newPowerUps = prev.powerUps.filter(p => p.expiresAt > Date.now());
         if (newPowerUps.length < 6 && Math.random() < 0.03) {
           newPowerUps.push({
@@ -341,43 +477,8 @@ export const useBattleGame = () => {
           if (snake.isDead) return snake;
 
           let currentDir = snake.direction;
-          if (snake.isPlayer) {
+          if (snake.isPlayer && snake.id === prev.myId) {
             currentDir = directionRef.current;
-          } else {
-            // Bot AI
-            let nearestFood = prev.foods[0];
-            let minDist = 9999;
-            prev.foods.forEach(f => {
-              const dist = Math.abs(f.x - snake.body[0].x) + Math.abs(f.y - snake.body[0].y);
-              if (dist < minDist) { minDist = dist; nearestFood = f; }
-            });
-
-            if (nearestFood) {
-              // Simple AI
-              const head = snake.body[0];
-              const dx = nearestFood.x - head.x;
-              const dy = nearestFood.y - head.y;
-
-              // Randomness based on level
-              const randomChance = Math.max(0.02, 0.12 - (snake.level * 0.02));
-
-              if (Math.random() > randomChance) {
-                if (Math.abs(dx) > Math.abs(dy)) {
-                  if (dx > 0 && currentDir !== 'LEFT') currentDir = 'RIGHT';
-                  else if (dx < 0 && currentDir !== 'RIGHT') currentDir = 'LEFT';
-                  else if (dy > 0 && currentDir !== 'UP') currentDir = 'DOWN';
-                  else if (dy < 0 && currentDir !== 'DOWN') currentDir = 'UP';
-                } else {
-                  if (dy > 0 && currentDir !== 'UP') currentDir = 'DOWN';
-                  else if (dy < 0 && currentDir !== 'DOWN') currentDir = 'UP';
-                  else if (dx > 0 && currentDir !== 'LEFT') currentDir = 'RIGHT';
-                  else if (dx < 0 && currentDir !== 'RIGHT') currentDir = 'LEFT';
-                }
-              } else {
-                const dirs: Direction[] = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
-                currentDir = dirs[Math.floor(Math.random() * 4)];
-              }
-            }
           }
 
           const head = { ...snake.body[0] };
@@ -391,18 +492,16 @@ export const useBattleGame = () => {
           return { ...snake, body: [head, ...snake.body], direction: currentDir };
         });
 
-        // Collisions
+        // Collision detection
         newSnakes = newSnakes.map(snake => {
           if (snake.isDead) return snake;
           const head = snake.body[0];
 
-          // Wall
           if (checkWallCollision(head, prev.canvasWidth, prev.canvasHeight)) {
             if (snake.shield) return { ...snake, shield: false };
             return { ...snake, isDead: true };
           }
 
-          // Snake collision
           for (const other of prev.snakes) {
             if (other.isDead) continue;
             const hit = other.body.some((seg, idx) => {
@@ -413,47 +512,31 @@ export const useBattleGame = () => {
               if (snake.shield) return { ...snake, shield: false };
               if (other.id !== snake.id) {
                 const ki = newSnakes.findIndex(s => s.id === other.id);
-                if (ki !== -1 && !newSnakes[ki].isDead) {
-                  const xpGain = 50 + snake.level * 10;
-                  const newXp = newSnakes[ki].xp + xpGain;
+                if (ki !== -1) {
                   newSnakes[ki] = {
                     ...newSnakes[ki],
-                    xp: newXp,
-                    level: calculateLevel(newXp),
                     kills: newSnakes[ki].kills + 1,
+                    xp: newSnakes[ki].xp + 50,
                     score: newSnakes[ki].score + 100
                   };
-
-                  // Check Kills Achievement for Player
-                  if (newSnakes[ki].isPlayer) {
-                    const killAch = checkAchievements({
-                      type: 'KILL',
-                      mode: 'battle',
-                      kills: newSnakes[ki].kills // pass total kills in this game
-                    });
-                    if (killAch.length > 0) {
-                      setUnlockedAchievements(prevUn => [...prevUn, ...killAch]);
-                    }
-                  }
                 }
               }
               return { ...snake, isDead: true };
             }
           }
 
-          // Food
+          // Food collision
           const fi = newFoods.findIndex(f => f.x === head.x && f.y === head.y);
           if (fi !== -1) {
             newFoods.splice(fi, 1);
-            const mult = snake.doubleXp ? 2 : 1;
-            const xpGain = 10 * snake.level * mult;
+            const xpGain = 10 * snake.level;
             const newXp = snake.xp + xpGain;
-            return { ...snake, score: snake.score + 10 * snake.level, xp: newXp, level: calculateLevel(newXp) };
+            return { ...snake, score: snake.score + 10, xp: newXp, level: calculateLevel(newXp) };
           } else {
             snake.body.pop();
           }
 
-          // Power-up
+          // Power-up collision
           const pi = newPowerUps.findIndex(p => p.position.x === head.x && p.position.y === head.y);
           if (pi !== -1) {
             const pu = newPowerUps[pi];
@@ -462,7 +545,7 @@ export const useBattleGame = () => {
               case 'speed': return { ...snake, speedBoost: true, score: snake.score + 25 };
               case 'shield': return { ...snake, shield: true, score: snake.score + 50 };
               case 'doubleXp': return { ...snake, doubleXp: true, score: snake.score + 30 };
-              case 'magnet': return { ...snake, magnet: true, xp: snake.xp + 50, score: snake.score + 40 };
+              case 'magnet': return { ...snake, magnet: true, score: snake.score + 40 };
               case 'bomb':
                 const nb = [...snake.body];
                 for (let i = 0; i < 5; i++) nb.push({ ...snake.body[snake.body.length - 1] });
@@ -476,7 +559,7 @@ export const useBattleGame = () => {
         // Winner check
         const alive = newSnakes.filter(s => !s.isDead);
         let winner = prev.winner;
-        let gameOver: boolean = prev.gameOver;
+        let gameOver = prev.gameOver;
 
         if (alive.length === 1 && prev.snakes.length > 1) {
           winner = alive[0].name;
@@ -485,52 +568,14 @@ export const useBattleGame = () => {
           gameOver = true;
         }
 
-        if (gameOver && !prev.gameOver) {
-          const mySnake = newSnakes.find(s => s.id === prev.myId);
-          if (mySnake) {
-            const isWinner = winner === mySnake.name;
-            const placementScore = isWinner ? 500 : 0;
-            const totalScore = mySnake.score + placementScore;
+        const newState = { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner };
 
-            // Save to leaderboard
-            storage.addLeaderboardEntry({
-              name: mySnake.name,
-              score: totalScore,
-              level: mySnake.level,
-              kills: mySnake.kills,
-              mode: 'Battle'
-            });
-
-            // Update player stats
-            const player = storage.getPlayer();
-            storage.savePlayer({
-              totalScore: player.totalScore + totalScore,
-              totalKills: player.totalKills + mySnake.kills,
-              gamesPlayed: player.gamesPlayed + 1,
-              wins: player.wins + (isWinner ? 1 : 0),
-              coins: player.coins + Math.floor(totalScore / 10) + (isWinner ? 100 : 0),
-              lastPlayDate: new Date().toDateString()
-            });
-
-            storage.updateStreak();
-
-            // Check Achievements
-            const newAchievements = checkAchievements({
-              type: 'WIN',
-              mode: 'battle',
-              score: totalScore,
-              kills: mySnake.kills,
-              level: mySnake.level,
-              gameTime: Math.floor((Date.now() - (prev.startTime || Date.now())) / 1000)
-            });
-
-            if (newAchievements.length > 0) {
-              setUnlockedAchievements(prevUn => [...prevUn, ...newAchievements]);
-            }
-          }
+        // Sync state to clients
+        if (isHostRef.current) {
+          broadcast({ type: 'GAME_STATE', payload: newState });
         }
 
-        return { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner };
+        return newState;
       });
 
       gameLoopRef.current = setTimeout(runGameLoop, speedRef.current);
@@ -542,9 +587,9 @@ export const useBattleGame = () => {
       clearInterval(speedInterval);
       if (gameLoopRef.current) clearTimeout(gameLoopRef.current);
     };
-  }, [gameState.gameStarted, gameState.gameOver]);
+  }, [gameState.gameStarted, gameState.gameOver, broadcast]);
 
-  // Keyboard
+  // Keyboard controls
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowUp') changeDirection('UP');
@@ -555,6 +600,15 @@ export const useBattleGame = () => {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [changeDirection]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      connectionsRef.current.forEach(conn => conn.close());
+      if (peerRef.current) peerRef.current.destroy();
+      if (gameLoopRef.current) clearTimeout(gameLoopRef.current);
+    };
+  }, []);
 
   return {
     gameState,

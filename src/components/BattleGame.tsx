@@ -249,6 +249,15 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
           <div className="bg-gray-900 p-3 rounded-lg mb-4">
             <div className="text-[10px] text-gray-400">Room Code</div>
             <div className="text-2xl font-mono font-bold text-blue-400 tracking-widest mb-2">{gameState.roomId}</div>
+
+            {/* Connection Status */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className={`w-2 h-2 rounded-full ${gameState.connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : gameState.connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className="text-[10px] text-gray-400">
+                {gameState.connectionStatus === 'connected' ? 'P2P Connected' : gameState.connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+              </span>
+            </div>
+
             <div className="flex gap-2 justify-center">
               <button onClick={copyInviteLink} className={`flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium ${copied ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 <Copy size={12} /> {copied ? 'Copied!' : 'Copy'}
@@ -257,6 +266,12 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
                 <Share2 size={12} /> Share
               </button>
             </div>
+
+            {gameState.snakes.length < 2 && (
+              <div className="mt-2 text-[10px] text-yellow-400 animate-pulse">
+                ⏳ Share the Room Code with a friend to play together!
+              </div>
+            )}
           </div>
 
           <div className="mb-4">
