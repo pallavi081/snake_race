@@ -10,7 +10,16 @@ type GameMode = 'classic' | 'puzzle' | 'physics' | 'battle' | 'creative' | null;
 
 function App() {
   const [gameMode, setGameMode] = useState<GameMode>(null);
-  // ... (keep useEffect)
+
+  // Auto-navigate to Battle mode if there's a room parameter in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      // Directly open Battle mode if joining via shared link
+      setGameMode('battle');
+    }
+  }, []);
 
   const renderGameMode = () => {
     switch (gameMode) {
