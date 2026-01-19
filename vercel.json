@@ -1,13 +1,11 @@
 {
   "framework": "vite",
-  "build": {
-    "command": "npm run build"
-  },
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/"
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
