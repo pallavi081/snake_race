@@ -104,6 +104,7 @@ export const useBattleGame = () => {
   const peerRef = useRef<Peer | null>(null);
   const connectionsRef = useRef<Map<string, DataConnection>>(new Map());
   const isHostRef = useRef(false);
+  const myIdRef = useRef<string | null>(null);
   const directionRef = useRef<Direction>('UP');
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const speedRef = useRef(BASE_SPEED);
@@ -135,11 +136,14 @@ export const useBattleGame = () => {
 
   // Send message to all peers
   const broadcast = useCallback((message: Omit<PeerMessage, 'senderId'>) => {
-    const fullMessage = { ...message, senderId: gameState.myId || 'unknown' };
+    const fullMessage = { ...message, senderId: myIdRef.current || 'unknown' };
     connectionsRef.current.forEach((conn) => {
-      if (conn.open) conn.send(fullMessage);
+      if (conn.open) {
+        console.log('📤 Broadcasting to', conn.peer, message.type);
+        conn.send(fullMessage);
+      }
     });
-  }, [gameState.myId]);
+  }, []);
 
   // Handle incoming messages
   const handleMessage = useCallback((message: PeerMessage) => {
@@ -171,11 +175,18 @@ export const useBattleGame = () => {
           };
 
           setGameState(prev => {
-            const updated = { ...prev, snakes: [...prev.snakes, newSnake], connectedPeers: prev.connectedPeers + 1 };
-            // Send full player list to all
-            setTimeout(() => {
-              broadcast({ type: 'PLAYER_LIST', payload: updated.snakes });
-            }, 100);
+            const updatedSnakes = [...prev.snakes, newSnake];
+            const updated = { ...prev, snakes: updatedSnakes, connectedPeers: prev.connectedPeers + 1 };
+
+            // Send full player list to all connected peers immediately
+            const playerListMsg = { type: 'PLAYER_LIST' as const, payload: updatedSnakes, senderId: myIdRef.current || 'host' };
+            connectionsRef.current.forEach((c) => {
+              if (c.open) {
+                console.log('📤 Sending player list to', c.peer);
+                c.send(playerListMsg);
+              }
+            });
+
             return updated;
           });
         }
@@ -255,6 +266,7 @@ export const useBattleGame = () => {
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const myId = `host-${roomId}`;
     isHostRef.current = true;
+    myIdRef.current = myId;
 
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
 
@@ -324,6 +336,7 @@ export const useBattleGame = () => {
   const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string) => {
     const myId = `player-${Date.now()}`;
     isHostRef.current = false;
+    myIdRef.current = myId;
 
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting', roomId, myId }));
 
