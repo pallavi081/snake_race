@@ -98,8 +98,14 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">Snake Race</h1>
-          <p className="text-gray-400 text-sm md:text-lg">Choose your challenge</p>
+
+          <div className="relative inline-block mb-4 group">
+            <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
+            <img src="/logo.png" alt="Snake Race Logo" className="w-32 h-32 md:w-40 md:h-40 mx-auto relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:scale-105 transition-transform duration-500" />
+          </div>
+
+          <h1 className="text-4xl md:text-6xl font-black mb-3 bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 text-transparent bg-clip-text drop-shadow-lg tracking-tight">Snake Race</h1>
+          <p className="text-gray-400 text-sm md:text-lg font-medium tracking-wide">Choose Your Battle Arena</p>
 
           <div className="flex gap-3 justify-center mt-4 flex-wrap">
             <button
