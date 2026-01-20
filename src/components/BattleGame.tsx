@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Play, Users, Copy, Share2, Loader2, Lock, Globe, Clock } from 'lucide-react';
+import { ArrowLeft, Play, Users, Copy, Share2, Loader2, Lock, Globe, Clock, Skull, Eye } from 'lucide-react';
 import { useBattleGame, SNAKE_COLORS } from './useBattleGame';
 import BattleCanvas from './BattleCanvas';
 import SwipeControls from './SwipeControls';
@@ -22,11 +22,15 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   const [mode, setMode] = useState<'name' | 'menu' | 'lobby' | 'game'>('name');
   const [copied, setCopied] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
-  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null); // Track if joining via shared link
+  const [joiningRoomId, setJoiningRoomId] = useState<string | null>(null);
 
   // Achievement Queue
   const [achievementQueue, setAchievementQueue] = useState<Achievement[]>([]);
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+
+  // Elimination Toast Queue
+  const [eliminationToasts, setEliminationToasts] = useState<{ id: string; name: string; killedBy?: string }[]>([]);
+  const [lastEliminationCount, setLastEliminationCount] = useState(0);
 
   // Get theme from storage
   const selectedTheme = storage.getPlayer().selectedTheme;
@@ -61,6 +65,24 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
       setAchievementQueue(prev => prev.slice(1));
     }
   }, [achievementQueue, currentAchievement]);
+
+  // Track eliminations and show toasts
+  useEffect(() => {
+    if (gameState.eliminatedPlayers.length > lastEliminationCount) {
+      const newEliminations = gameState.eliminatedPlayers.slice(lastEliminationCount);
+      newEliminations.forEach(elim => {
+        // Don't show toast for self
+        if (elim.id !== gameState.myId) {
+          setEliminationToasts(prev => [...prev, elim]);
+          // Auto-remove toast after 3 seconds
+          setTimeout(() => {
+            setEliminationToasts(prev => prev.filter(t => t.id !== elim.id));
+          }, 3000);
+        }
+      });
+      setLastEliminationCount(gameState.eliminatedPlayers.length);
+    }
+  }, [gameState.eliminatedPlayers, lastEliminationCount, gameState.myId]);
 
   const handleSwipe = (direction: Direction) => changeDirection(direction);
 
@@ -338,6 +360,56 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
           <SwipeControls onSwipe={handleSwipe}>
             <BattleCanvas gameState={gameState} theme={theme} />
           </SwipeControls>
+
+          {/* Elimination Toasts - shown to other players when someone is eliminated */}
+          {eliminationToasts.length > 0 && (
+            <div className="fixed top-20 left-0 right-0 flex flex-col items-center gap-2 z-40 pointer-events-none">
+              {eliminationToasts.map((toast, idx) => (
+                <div
+                  key={toast.id + idx}
+                  className="bg-red-900/90 border border-red-500 px-4 py-2 rounded-lg flex items-center gap-2 animate-pulse shadow-lg"
+                >
+                  <Skull size={18} className="text-red-400" />
+                  <span className="text-white font-bold">{toast.name}</span>
+                  <span className="text-red-300">OUT!</span>
+                  {toast.killedBy && (
+                    <span className="text-gray-400 text-xs">by {toast.killedBy}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Spectator Mode - shown only to eliminated player while game continues */}
+          {mySnake?.isDead && !gameState.gameOver && (
+            <div className="fixed inset-0 bg-black/70 flex flex-col items-center justify-center z-40 pointer-events-none">
+              <div className="bg-gray-900/95 border border-red-500 rounded-2xl p-6 text-center max-w-sm mx-4">
+                <Skull size={48} className="text-red-500 mx-auto mb-3" />
+                <h2 className="text-2xl font-bold text-red-400 mb-2">YOU'RE OUT!</h2>
+                <div className="flex items-center justify-center gap-2 text-gray-300 mb-4">
+                  <Eye size={16} />
+                  <span>Spectating...</span>
+                </div>
+                <div className="text-xs text-gray-400 mb-4">
+                  {gameState.snakes.filter(s => !s.isDead).length} players remaining
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 mb-4">
+                  <div className="text-xs text-gray-400 mb-1">Your Final Stats</div>
+                  <div className="flex items-center justify-center gap-3 text-xs flex-wrap">
+                    <span className="text-yellow-400">⭐Lv.{mySnake.level}</span>
+                    <span className="text-red-400">💀{mySnake.kills}</span>
+                    <span className="text-green-400">🏆{mySnake.score}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={onBack}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm pointer-events-auto"
+                >
+                  Leave Game
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Game Over */}
           {gameState.gameOver && (

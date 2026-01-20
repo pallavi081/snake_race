@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings, LogIn, LogOut, User, Users, MessageCircle, Gift, Crown, MoreVertical } from 'lucide-react';
+import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings as SettingsIcon, LogIn, LogOut, User, Users, MessageCircle, Gift, Crown, MoreVertical, Palette, Sparkles, Skull, Target } from 'lucide-react';
 import GameInstructions from './GameInstructions';
 import Leaderboard from './Leaderboard';
 import Shop from './Shop';
 import Achievements from './Achievements';
 import DailyChallenges from './DailyChallenges';
-import DataSync from './DataSync';
+import Settings from './Settings';
 import Tournaments from './Tournaments';
 import Friends from './Friends';
 import GlobalChat from './GlobalChat';
 import PlayerProfile from './PlayerProfile';
 import DailyRewards from './DailyRewards';
+import BossBattle from './BossBattle';
+import SkinCreator from './SkinCreator';
+import SeasonalEvents from './SeasonalEvents';
+import ZombieSurvival from './ZombieSurvival';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
 
@@ -24,13 +28,17 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
   const [showShop, setShowShop] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
-  const [showDataSync, setShowDataSync] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showTournaments, setShowTournaments] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showDailyRewards, setShowDailyRewards] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showBossBattle, setShowBossBattle] = useState(false);
+  const [showSkinCreator, setShowSkinCreator] = useState(false);
+  const [showSeasonalEvents, setShowSeasonalEvents] = useState(false);
+  const [showZombieMode, setShowZombieMode] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [player, setPlayer] = useState(storage.getPlayer());
 
@@ -104,6 +112,15 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <button onClick={() => setShowTournaments(true)} className="p-2 bg-amber-600/20 hover:bg-amber-600/40 rounded-lg transition-all" title="Tournament">
               <Crown size={18} className="text-amber-400" />
             </button>
+            <button onClick={() => setShowBossBattle(true)} className="p-2 bg-orange-600/20 hover:bg-orange-600/40 rounded-lg transition-all" title="Boss Battle">
+              <Skull size={18} className="text-orange-400" />
+            </button>
+            <button onClick={() => setShowSeasonalEvents(true)} className="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 rounded-lg transition-all" title="Events">
+              <Sparkles size={18} className="text-cyan-400" />
+            </button>
+            <button onClick={() => setShowSkinCreator(true)} className="p-2 bg-pink-600/20 hover:bg-pink-600/40 rounded-lg transition-all" title="Skin Creator">
+              <Palette size={18} className="text-pink-400" />
+            </button>
             <button onClick={() => setShowFriends(true)} className="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 rounded-lg transition-all" title="Friends">
               <Users size={18} className="text-cyan-400" />
             </button>
@@ -122,8 +139,8 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <button onClick={() => setShowShop(true)} className="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 rounded-lg transition-all" title="Shop">
               <ShoppingBag size={18} className="text-emerald-400" />
             </button>
-            <button onClick={() => setShowDataSync(true)} className="p-2 bg-gray-600/20 hover:bg-gray-600/40 rounded-lg transition-all" title="Settings">
-              <Settings size={18} className="text-gray-400" />
+            <button onClick={() => setShowSettings(true)} className="p-2 bg-gray-600/20 hover:bg-gray-600/40 rounded-lg transition-all" title="Settings">
+              <SettingsIcon size={18} className="text-gray-400" />
             </button>
           </div>
 
@@ -152,6 +169,15 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
                     <button onClick={() => { setShowTournaments(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
                       <Crown size={18} className="text-amber-400" /> Weekly Tournament
                     </button>
+                    <button onClick={() => { setShowBossBattle(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Skull size={18} className="text-orange-400" /> Boss Battles
+                    </button>
+                    <button onClick={() => { setShowSeasonalEvents(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Sparkles size={18} className="text-cyan-400" /> Seasonal Events
+                    </button>
+                    <button onClick={() => { setShowSkinCreator(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Palette size={18} className="text-pink-400" /> Skin Creator
+                    </button>
                     <button onClick={() => { setShowFriends(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
                       <Users size={18} className="text-cyan-400" /> Friends
                     </button>
@@ -165,8 +191,8 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
                       <Star size={18} className="text-purple-400" /> Achievements
                     </button>
                     <div className="border-t border-gray-700" />
-                    <button onClick={() => { setShowDataSync(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
-                      <Settings size={18} className="text-gray-400" /> Settings & Data
+                    <button onClick={() => { setShowSettings(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <SettingsIcon size={18} className="text-gray-400" /> Settings & Data
                     </button>
                     {isAuthenticated && (
                       <button onClick={() => { signOut(); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-900/50 text-left text-red-400">
@@ -192,6 +218,51 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
 
           <h1 className="text-4xl md:text-6xl font-black mb-3 bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 text-transparent bg-clip-text drop-shadow-lg tracking-tight">Snake Race</h1>
           <p className="text-gray-400 text-sm md:text-lg font-medium tracking-wide">Choose Your Battle Arena</p>
+
+          {/* Featured Hero Specials */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10 max-w-5xl w-full mx-auto">
+            <div
+              onClick={() => setShowBossBattle(true)}
+              className="relative overflow-hidden group cursor-pointer rounded-2xl border-2 border-orange-500/30 hover:border-orange-500 transition-all bg-gradient-to-br from-orange-900/40 to-black p-1"
+            >
+              <div className="bg-orange-600 px-3 py-1 rounded-bl-xl absolute top-0 right-0 text-[10px] font-black z-20">EPIC BOSSES</div>
+              <div className="p-4 flex items-center gap-4">
+                <div className="bg-orange-500/20 p-3 rounded-xl"><Skull className="text-orange-500" /></div>
+                <div>
+                  <div className="font-black text-lg">BOSS BATTLE</div>
+                  <div className="text-xs text-gray-400">Defeat the 5 Kings</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setShowZombieMode(true)}
+              className="relative overflow-hidden group cursor-pointer rounded-2xl border-2 border-green-500/30 hover:border-green-500 transition-all bg-gradient-to-br from-green-900/40 to-black p-1"
+            >
+              <div className="bg-green-600 px-3 py-1 rounded-bl-xl absolute top-0 right-0 text-[10px] font-black z-20">SURVIVE</div>
+              <div className="p-4 flex items-center gap-4">
+                <div className="bg-green-500/20 p-3 rounded-xl"><Target className="text-green-500" /></div>
+                <div>
+                  <div className="font-black text-lg">ZOMBIE SURVIVAL</div>
+                  <div className="text-xs text-gray-400">Outrun the Undead</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setShowSeasonalEvents(true)}
+              className="relative overflow-hidden group cursor-pointer rounded-2xl border-2 border-cyan-500/30 hover:border-cyan-500 transition-all bg-gradient-to-br from-cyan-900/40 to-black p-1"
+            >
+              <div className="bg-cyan-600 px-3 py-1 rounded-bl-xl absolute top-0 right-0 text-[10px] font-black z-20">FESTIVALS</div>
+              <div className="p-4 flex items-center gap-4">
+                <div className="bg-cyan-500/20 p-3 rounded-xl"><Sparkles className="text-cyan-400" /></div>
+                <div>
+                  <div className="font-black text-lg">SEASONAL EVENTS</div>
+                  <div className="text-xs text-gray-400">Diwali, Christmas & More</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="flex gap-3 justify-center mt-4 flex-wrap">
             <button
@@ -245,13 +316,6 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <h2 className="text-lg md:text-xl font-bold text-center md:text-left">Creative</h2>
             <p className="text-gray-400 text-xs md:text-sm hidden md:block mt-2">Build & Play Custom Maps</p>
           </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-8 flex gap-4 text-sm text-gray-400">
-          <span>🎮 {player.gamesPlayed} games</span>
-          <span>🏆 {player.wins} wins</span>
-          <span>💀 {player.totalKills} kills</span>
         </div>
       </div>
 
@@ -336,7 +400,7 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
       {showShop && <Shop onClose={() => { setShowShop(false); refreshPlayer(); }} onPurchase={refreshPlayer} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showDailyChallenges && <DailyChallenges onClose={() => setShowDailyChallenges(false)} />}
-      {showDataSync && <DataSync onClose={() => setShowDataSync(false)} onImport={refreshPlayer} />}
+      {showSettings && <Settings onClose={() => setShowSettings(false)} onImport={refreshPlayer} />}
       {showTournaments && (
         <Tournaments
           onClose={() => setShowTournaments(false)}
@@ -374,6 +438,26 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
           onClose={() => setShowDailyRewards(false)}
           onClaim={refreshPlayer}
         />
+      )}
+      {showBossBattle && (
+        <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
+          <BossBattle onBack={() => setShowBossBattle(false)} />
+        </div>
+      )}
+      {showSkinCreator && (
+        <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
+          <SkinCreator onBack={() => setShowSkinCreator(false)} />
+        </div>
+      )}
+      {showSeasonalEvents && (
+        <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto border-t border-gray-800">
+          <SeasonalEvents onBack={() => setShowSeasonalEvents(false)} />
+        </div>
+      )}
+      {showZombieMode && (
+        <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
+          <ZombieSurvival onBack={() => setShowZombieMode(false)} />
+        </div>
       )}
     </div>
   );

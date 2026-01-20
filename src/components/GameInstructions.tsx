@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Keyboard, Smartphone, Zap, Award, Swords, ShoppingBag, Calendar, Trophy } from 'lucide-react';
+import { Keyboard, Smartphone, Zap, Award, Swords, ShoppingBag, Calendar, Trophy, Skull, Target } from 'lucide-react';
 
 const GameInstructions: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'classic' | 'battle' | 'features'>('classic');
@@ -115,30 +115,49 @@ const GameInstructions: React.FC = () => {
 
         {activeTab === 'features' && (
           <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-orange-900/20 p-3 rounded-lg border border-orange-500/30">
+                <h4 className="font-bold text-orange-400 flex items-center gap-2 mb-2">
+                  <Skull className="w-4 h-4" /> Boss Battles
+                </h4>
+                <p className="text-xs text-gray-300">
+                  Fight 5 Epic Bosses! Each has unique health bars and special attacks. Defeat them to unlock the next boss.
+                </p>
+              </div>
+              <div className="bg-green-900/20 p-3 rounded-lg border border-green-500/30">
+                <h4 className="font-bold text-green-400 flex items-center gap-2 mb-2">
+                  <Target className="w-4 h-4" /> Zombie Survival
+                </h4>
+                <p className="text-xs text-gray-300">
+                  Survive waves of undead snakes! Collect <strong>Blue Cures</strong> to clear half the zombies. Watch your hearts!
+                </p>
+              </div>
+            </div>
+
             <div>
               <h4 className="font-medium text-white flex items-center gap-2 mb-1">
-                <ShoppingBag className="w-4 h-4 text-pink-400" /> Shop & Skins
+                <ShoppingBag className="w-4 h-4 text-pink-400" /> Shop, Skins & Creator
               </h4>
               <p className="text-xs text-gray-400 mb-1">Customize your snake!</p>
               <ul className="text-sm space-y-1 text-gray-300">
-                <li>• Earn <span className="text-yellow-400">Coins</span> by playing games</li>
-                <li>• Buy unique skins (Gold, Neon, Glitch)</li>
-                <li>• Unlock visual themes for the grid</li>
+                <li>• Earn <span className="text-yellow-400">Coins</span> by playing any mode</li>
+                <li>• Buy unique skins or <strong>Create your own!</strong></li>
+                <li>• Accessible via the Palette Icon in the top bar</li>
               </ul>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <h4 className="font-medium text-white flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-blue-400" /> Daily Quests
+                  <Calendar className="w-4 h-4 text-blue-400" /> Daily Quests & Events
                 </h4>
-                <p className="text-xs text-gray-300">Complete 3 challenges every day for big coin rewards and streak bonuses!</p>
+                <p className="text-xs text-gray-300">Complete daily challenges or join <strong>Seasonal Events</strong> (Diwali, Christmas) for exclusive rewards!</p>
               </div>
               <div>
                 <h4 className="font-medium text-white flex items-center gap-2 mb-1">
                   <Trophy className="w-4 h-4 text-yellow-500" /> Achievements
                 </h4>
-                <p className="text-xs text-gray-300">Unlock over 50 achievements like "First Blood" or "Pacifist" to earn rewards.</p>
+                <p className="text-xs text-gray-300">Unlock over 50 achievements to earn bonus coins and bragging rights.</p>
               </div>
             </div>
           </div>

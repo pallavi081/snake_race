@@ -51,6 +51,7 @@ export interface BattleGameState {
   startTime?: number;
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   connectedPeers: number;
+  eliminatedPlayers: { id: string; name: string; time: number; killedBy?: string }[];
 }
 
 interface PeerMessage {
@@ -99,6 +100,7 @@ export const useBattleGame = () => {
     startTime: 0,
     connectionStatus: 'disconnected',
     connectedPeers: 0,
+    eliminatedPlayers: [],
   });
 
   const peerRef = useRef<Peer | null>(null);
@@ -592,6 +594,25 @@ export const useBattleGame = () => {
           return snake;
         });
 
+        // Track newly eliminated players
+        const newlyEliminated: { id: string; name: string; time: number; killedBy?: string }[] = [];
+        newSnakes.forEach((snake, idx) => {
+          const wasAlive = prev.snakes[idx] && !prev.snakes[idx].isDead;
+          if (wasAlive && snake.isDead) {
+            // Find who killed them (if collision with another snake)
+            const killer = newSnakes.find(s => s.id !== snake.id && s.kills > (prev.snakes.find(ps => ps.id === s.id)?.kills || 0));
+            newlyEliminated.push({
+              id: snake.id,
+              name: snake.name,
+              time: prev.gameTime,
+              killedBy: killer?.name
+            });
+          }
+        });
+
+        // Merge with existing eliminated players
+        const eliminatedPlayers = [...prev.eliminatedPlayers, ...newlyEliminated];
+
         // Winner check - calculate final scores with size and time bonuses
         const alive = newSnakes.filter(s => !s.isDead);
         let winner = prev.winner;
@@ -616,7 +637,7 @@ export const useBattleGame = () => {
           gameOver = true;
         }
 
-        const newState = { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner };
+        const newState = { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner, eliminatedPlayers };
 
         // Sync state to clients
         if (isHostRef.current) {

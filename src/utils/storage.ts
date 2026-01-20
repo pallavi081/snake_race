@@ -25,6 +25,14 @@ export interface PlayerData {
     unlockedThemes: string[];
 }
 
+// Game Settings
+export interface GameSettings {
+    soundEnabled: boolean;
+    vibrationEnabled: boolean;
+    musicEnabled: boolean;
+    difficulty: 'easy' | 'normal' | 'hard';
+}
+
 // Leaderboard entry
 export interface LeaderboardEntry {
     id: string;
@@ -66,6 +74,13 @@ const defaultPlayerData: PlayerData = {
     selectedTheme: 'default',
     unlockedSkins: ['default'],
     unlockedThemes: ['default'],
+};
+
+const defaultSettings: GameSettings = {
+    soundEnabled: true,
+    vibrationEnabled: true,
+    musicEnabled: true,
+    difficulty: 'normal',
 };
 
 // Storage functions
@@ -137,7 +152,7 @@ export const storage = {
 
     saveAchievement: (id: string, progress: Partial<AchievementProgress>) => {
         const achievements = storage.getAchievements();
-        achievements[id] = { id, unlocked: false, progress: 0, ...achievements[id], ...progress };
+        achievements[id] = { unlocked: false, progress: 0, ...achievements[id], ...progress, id };
         localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(achievements));
     },
 
@@ -219,6 +234,21 @@ export const storage = {
             console.error('Failed to import data:', e);
             return false;
         }
+    },
+
+    // Settings
+    getSettings: (): GameSettings => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+            return data ? { ...defaultSettings, ...JSON.parse(data) } : defaultSettings;
+        } catch {
+            return defaultSettings;
+        }
+    },
+
+    saveSettings: (settings: Partial<GameSettings>) => {
+        const current = storage.getSettings();
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ ...current, ...settings }));
     }
 };
 

@@ -10,16 +10,20 @@ A modern, feature-rich Snake game built with React, TypeScript, and Vite. It com
     *   **Combat:** Cut off other snakes to kill them.
     *   **Progression:** Collect XP orbs to level up and increase size.
     *   **Power-Ups:** Shield, Magnet, Speed Boost, and Double XP.
-3.  **Puzzle Mode:** specialized challenges with move limits and undo functionality.
-4.  **Physics Mode:** Gravity, jumping, and platforms platformer-style mechanics.
-5.  **Creative Mode (Level Editor):** 🏗️ Design your own custom maps with a drag-and-drop editor. Save and play them!
+3.  **Boss Battles:** 🐉 Defeat 5 unique kings (Viper King, Void Cobra, etc.) with special abilities and progression.
+4.  **Zombie Survival:** 🧟 Survive waves of undead snakes, collect cures, and watch your hearts!
+5.  **Seasonal Events:** 🎪 Holiday themes (Diwali, Christmas, etc.) with exclusive time-limited rewards.
+6.  **Custom Skin Creator:** 🎨 Design your own snake with colors, patterns, and accessories.
+7.  **Puzzle Mode:** specialized challenges with move limits and undo functionality.
+8.  **Physics Mode:** Gravity, jumping, and platforms platformer-style mechanics.
+9.  **Creative Mode (Level Editor):** 🏗️ Design your own custom maps, save and play them!
 
 ### 🏆 Progression & Economy
-*   **Global Leaderboard:** Track high scores across all modes locally.
-*   **Shop System:** Earn coins to unlock **9 Unique Skins** and **6 Visual Themes**.
-*   **Daily Challenges:** 3 new quests every day (e.g., "Get 5 kills") to earn rewards and keep a streak.
-*   **Achievements:** Over 50 unlockable achievements with toast notifications.
-*   **Data Sync:** 💾 Export/Import your save data (coins, skins, stats) to transfer between devices.
+*   **Global Leaderboard:** Track high scores locally and compete globally.
+*   **Shop & Creator:** Earn coins to unlock skins or craft your own unique look.
+*   **Daily Challenges:** 3 new quests every day to earn rewards and build streaks.
+*   **Achievements:** Over 50 unlockable rewards with toast notifications.
+*   **Data Sync & Settings:** 💾 Export/Import data and control Sound/Vibration.
 
 ### 🎥 Advanced Features
 *   **Battle Recording:** Record your gameplay in Battle Royale and download the replay video.
