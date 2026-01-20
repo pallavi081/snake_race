@@ -9,6 +9,12 @@ export interface PowerUp {
   expiresAt: number;
 }
 
+export interface EventItem {
+  position: Position;
+  type: string;
+  expiresAt: number;
+}
+
 export type PowerUpType = 'speed' | 'slow' | 'double' | 'shrink';
 
 export interface Particle {
@@ -41,6 +47,7 @@ export interface GameState {
   level: number;
   speed: number;
   powerUps: PowerUp[];
+  eventItems: EventItem[];
   activePowerUp: PowerUpType | null;
   powerUpEndTime: number;
   particles: Particle[];

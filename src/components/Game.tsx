@@ -13,14 +13,16 @@ import { HelpCircle, Settings as SettingsIcon, ArrowLeft, Play, Pause, Save } fr
 import { Difficulty, Position, Direction } from '../types/game';
 import { GRID_SIZE } from '../utils/gameLogic';
 import { Achievement } from '../data/achievements';
+import { Sparkles } from 'lucide-react';
 
 interface GameProps {
   onBack: () => void;
   isCreative?: boolean;
+  activeEvent?: string | null;
 }
 
-const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
-  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound, difficulty, setDifficulty, settings, updateSettings, isPaused, togglePause, loadCustomLevel, unlockedAchievements, clearAchievements } = useSnakeGame();
+const Game: React.FC<GameProps> = ({ onBack, isCreative = false, activeEvent = null }) => {
+  const { gameState, startGame, resetGame, changeDirection, soundEnabled, toggleSound, difficulty, setDifficulty, isPaused, togglePause, loadCustomLevel, unlockedAchievements, clearAchievements } = useSnakeGame(activeEvent);
 
   const [showInstructions, setShowInstructions] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -147,6 +149,11 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
                 <h1 className="text-3xl font-bold text-center text-white">
                   Classic Mode
                 </h1>
+              )}
+              {activeEvent && !gameState.gameStarted && (
+                <div className="absolute top-16 left-1/2 -translate-x-1/2 bg-yellow-600/20 border border-yellow-500/50 text-yellow-400 px-3 py-1 rounded-full text-xs font-bold animate-pulse flex items-center gap-1">
+                  <Sparkles size={12} /> {activeEvent.toUpperCase()} EVENT ACTIVE
+                </div>
               )}
               <div className="w-8"></div>
             </div>
@@ -286,9 +293,8 @@ const Game: React.FC<GameProps> = ({ onBack, isCreative = false }) => {
 
         {showSettings && (
           <Settings
-            settings={settings}
-            onSettingsChange={updateSettings}
             onClose={() => setShowSettings(false)}
+            onImport={() => window.location.reload()}
           />
         )}
 

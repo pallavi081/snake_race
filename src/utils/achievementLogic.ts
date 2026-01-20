@@ -12,12 +12,40 @@ export interface GameEvent {
     foodEaten?: number;
     gameTime?: number; // seconds
     activePowerUps?: string[];
+    eventId?: string | null;
+    itemType?: string;
 }
 
 export const checkAchievements = (event: GameEvent): Achievement[] => {
     const unlocked: Achievement[] = [];
     const player = storage.getPlayer();
     const currentAchievements = storage.getAchievements();
+
+    // Track seasonal challenges if applicable
+    if (event.eventId && event.itemType) {
+        const player = storage.getPlayer();
+        const eventProgress = player.eventProgress || {};
+
+        // Define challenge mapping (this should ideally be dynamic but for now matches data)
+        const challengeMapping: Record<string, string[]> = {
+            diwali: ['d1', 'd2'], // d1: Collect Diyas, d2: Light Lamps (same thing for now)
+            christmas: ['c1', 'c2'], // c1: Presents, c2: Candy Canes
+            valentine: ['v1'], // v1: Hearts
+            chhath: ['ch1'], // ch1: Offerings
+            dussehra: ['ds1', 'ds2'], // ds1: Score, ds2: Enemies
+            eid: ['e1'], // e1: Crescents
+        };
+
+        const challenges = challengeMapping[event.eventId];
+        if (challenges) {
+            challenges.forEach(cId => {
+                const key = `${event.eventId}_${cId}`;
+                const currentProgress = eventProgress[key] || 0;
+                eventProgress[key] = currentProgress + 1;
+            });
+            storage.savePlayer({ eventProgress });
+        }
+    }
 
     // Helper to check if already unlocked
     const isLocked = (id: string) => !currentAchievements[id]?.unlocked;

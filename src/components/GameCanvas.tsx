@@ -28,6 +28,17 @@ const getPowerUpSymbol = (type: PowerUpType) => {
   return symbols[type];
 };
 
+const getEventItemSymbol = (type: string) => {
+  const symbols: Record<string, string> = {
+    diwali: '🪔',
+    christmas: '🎄',
+    halloween: '🎃',
+    holi: '🎨',
+    eid: '🌙'
+  };
+  return symbols[type] || '🎁';
+};
+
 const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { canvasWidth, canvasHeight, settings } = gameState;
@@ -127,8 +138,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }
       );
     });
 
+    // Draw event items
+    gameState.eventItems.forEach(item => {
+      ctx.shadowColor = '#fbbf24';
+      ctx.shadowBlur = 15;
+
+      // Draw symbol
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        getEventItemSymbol(item.type),
+        item.position.x * GRID_SIZE + GRID_SIZE / 2,
+        item.position.y * GRID_SIZE + GRID_SIZE / 2 + 5
+      );
+    });
+
     ctx.shadowBlur = 0;
-  }, [gameState.snake, gameState.food, gameState.powerUps, gameState.particles, canvasWidth, canvasHeight, settings]);
+  }, [gameState.snake, gameState.food, gameState.powerUps, gameState.eventItems, gameState.particles, canvasWidth, canvasHeight, settings]);
 
   return (
     <div className="relative">

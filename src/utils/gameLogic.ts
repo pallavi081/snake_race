@@ -1,4 +1,4 @@
-import { Position, Direction, GameState, PowerUp, PowerUpType, Particle, Difficulty } from '../types/game';
+import { Position, Direction, GameState, PowerUp, PowerUpType, Particle, Difficulty, EventItem } from '../types/game';
 
 export const GRID_SIZE = 20;
 export const SPEED_INCREMENT = 10;
@@ -20,6 +20,7 @@ export const INITIAL_SNAKE: Position[] = [
 export const POWER_UP_TYPES: PowerUpType[] = ['speed', 'slow', 'double', 'shrink'];
 export const POWER_UP_DURATION = 5000; // 5 seconds
 export const POWER_UP_SPAWN_CHANCE = 0.15; // 15% chance
+export const EVENT_ITEM_SPAWN_CHANCE = 0.10; // 10% chance
 
 export const generateFood = (snake: Position[], canvasWidth: number, canvasHeight: number): Position => {
   const maxX = Math.floor(canvasWidth / GRID_SIZE);
@@ -57,6 +58,32 @@ export const generatePowerUp = (snake: Position[], food: Position, canvasWidth: 
     position,
     type: POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)],
     expiresAt: Date.now() + 10000 // 10 seconds to collect
+  };
+};
+
+export const generateEventItem = (snake: Position[], food: Position, powerUps: PowerUp[], eventItems: EventItem[], canvasWidth: number, canvasHeight: number, eventType: string): EventItem | null => {
+  if (Math.random() > EVENT_ITEM_SPAWN_CHANCE) return null;
+
+  const maxX = Math.floor(canvasWidth / GRID_SIZE);
+  const maxY = Math.floor(canvasHeight / GRID_SIZE);
+
+  let position: Position;
+  do {
+    position = {
+      x: Math.floor(Math.random() * maxX),
+      y: Math.floor(Math.random() * maxY)
+    };
+  } while (
+    snake.some(segment => segment.x === position.x && segment.y === position.y) ||
+    (position.x === food.x && position.y === food.y) ||
+    powerUps.some(p => p.position.x === position.x && p.position.y === position.y) ||
+    eventItems.some(e => e.position.x === position.x && e.position.y === position.y)
+  );
+
+  return {
+    position,
+    type: eventType,
+    expiresAt: Date.now() + 15000 // 15 seconds to collect
   };
 };
 
@@ -131,6 +158,12 @@ export const checkFoodCollision = (head: Position, food: Position): boolean => {
 export const checkPowerUpCollision = (head: Position, powerUps: PowerUp[]): PowerUp | null => {
   return powerUps.find(powerUp =>
     powerUp.position.x === head.x && powerUp.position.y === head.y
+  ) || null;
+};
+
+export const checkEventItemCollision = (head: Position, eventItems: EventItem[]): EventItem | null => {
+  return eventItems.find(item =>
+    item.position.x === head.x && item.position.y === head.y
   ) || null;
 };
 

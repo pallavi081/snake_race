@@ -13,6 +13,8 @@ import {
   checkSelfCollision,
   checkFoodCollision,
   checkPowerUpCollision,
+  checkEventItemCollision,
+  generateEventItem,
   calculateScore,
   getGameSpeed,
   getOppositeDirection,
@@ -53,7 +55,7 @@ const getInitialSettings = (): Settings => {
   };
 };
 
-export const useSnakeGame = () => {
+export const useSnakeGame = (activeEvent: string | null = null) => {
   const [difficulty, setDifficultyState] = useState<Difficulty>('Medium');
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [canvasDimensions, setCanvasDimensions] = useState(getInitialCanvasDimensions());
@@ -72,6 +74,7 @@ export const useSnakeGame = () => {
     level: 1,
     speed: getGameSpeed(1, null, difficulty),
     powerUps: [],
+    eventItems: [],
     activePowerUp: null,
     powerUpEndTime: 0,
     particles: [],
@@ -137,6 +140,7 @@ export const useSnakeGame = () => {
       level: 1,
       speed: getGameSpeed(1, null, difficulty),
       powerUps: [],
+      eventItems: [],
       activePowerUp: null,
       powerUpEndTime: 0,
       particles: [],
@@ -176,8 +180,9 @@ export const useSnakeGame = () => {
       // Update particles
       const updatedParticles = updateParticles(prevState.particles);
 
-      // Remove expired power-ups
+      // Remove expired power-ups and event items
       const activePowerUps = prevState.powerUps.filter(powerUp => powerUp.expiresAt > currentTime);
+      const activeEventItems = prevState.eventItems.filter(item => item.expiresAt > currentTime);
 
       // Check if active power-up expired
       const activePowerUp = currentTime < prevState.powerUpEndTime ? prevState.activePowerUp : null;
@@ -247,6 +252,27 @@ export const useSnakeGame = () => {
         newPowerUps = activePowerUps.filter(p => p !== collectedPowerUp);
       }
 
+      // Check event item collision
+      const collectedEventItem = checkEventItemCollision(head, activeEventItems);
+      let newEventItems = activeEventItems;
+      let scoreBonus = 0;
+
+      if (collectedEventItem) {
+        playSound(1000, 0.3); // High pitched ping
+        if (navigator.vibrate) navigator.vibrate([30, 30, 30]);
+        newEventItems = activeEventItems.filter(e => e !== collectedEventItem);
+        scoreBonus = 50; // Bonus for collecting event items
+
+        // Track collection for achievements (custom event)
+        checkAchievements({
+          type: 'GAME_OVER', // Using existing types for now, will broaden if needed
+          mode: 'classic',
+          score: prevState.score + scoreBonus,
+          level: prevState.level,
+          length: newSnake.length
+        });
+      }
+
       // Check food collision
       if (checkFoodCollision(head, prevState.food)) {
         playSound(440, 0.1);
@@ -279,26 +305,38 @@ export const useSnakeGame = () => {
           newPowerUps.push(newPowerUp);
         }
 
+        // Generate new event item occasionally if an event is active
+        if (activeEvent) {
+          const newEventItem = generateEventItem(finalSnake, newFood, newPowerUps, newEventItems, prevState.canvasWidth, prevState.canvasHeight, activeEvent);
+          if (newEventItem) {
+            newEventItems.push(newEventItem);
+          }
+        }
+
         return {
           ...prevState,
           snake: finalSnake,
           food: newFood,
-          score: newScore,
+          score: newScore + scoreBonus,
           level: newLevel,
           speed: getGameSpeed(newLevel, newActivePowerUp, prevState.difficulty),
           powerUps: newPowerUps,
+          eventItems: newEventItems,
           activePowerUp: newActivePowerUp,
           powerUpEndTime: newPowerUpEndTime,
-          particles: [...updatedParticles, ...createParticles(head.x, head.y, '#22c55e')],
+          particles: [...updatedParticles, ...createParticles(head.x, head.y, collectedEventItem ? '#fbbf24' : '#22c55e')],
           combo: newCombo,
           lastFoodTime: currentTime
         };
       }
 
+      // Even if food is not collected, we still update eventItems and powerUps
       return {
         ...prevState,
         snake: newSnake,
         powerUps: newPowerUps,
+        eventItems: newEventItems,
+        score: prevState.score + scoreBonus,
         activePowerUp: newActivePowerUp,
         powerUpEndTime: newPowerUpEndTime,
         particles: updatedParticles,

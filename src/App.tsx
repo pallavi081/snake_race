@@ -8,6 +8,7 @@ import BattleGame from './components/BattleGame.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
 import { getGlobalSettings } from './utils/cloudStorage';
 import { AlertTriangle, Megaphone } from 'lucide-react';
+import { getEffectiveActiveEventId } from './data/seasonalEvents';
 
 type GameMode = 'classic' | 'puzzle' | 'physics' | 'battle' | 'creative' | 'admin' | null;
 
@@ -56,9 +57,11 @@ function App() {
   console.log('Current Game Mode:', gameMode);
 
   const renderGameMode = () => {
+    const activeEventId = getEffectiveActiveEventId(settings);
+
     switch (gameMode) {
       case 'classic':
-        return <Game onBack={() => setGameMode(null)} />;
+        return <Game onBack={() => setGameMode(null)} activeEvent={activeEventId} />;
       case 'puzzle':
         return <PuzzleGame onBack={() => setGameMode(null)} />;
       case 'physics':
