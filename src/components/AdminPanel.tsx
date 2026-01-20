@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Shield, Calendar, Search, Save, X, RefreshCw, Star, Coins, BarChart2, Trash2, List, Lock, LogOut, Megaphone, Clock } from 'lucide-react';
-import { getAllUsers, getGlobalSettings, updateGlobalSettings, syncPlayerToCloud, getSystemStats, getGlobalLeaderboard, deleteLeaderboardEntry } from '../utils/cloudStorage';
+import { getAllUsers, getGlobalSettings, updateGlobalSettings, syncPlayerToCloud, getSystemStats, getGlobalLeaderboard, deleteLeaderboardEntry, LeaderboardEntry } from '../utils/cloudStorage';
 import { useAdmin } from '../hooks/useAdmin';
 
 interface AdminUser {
@@ -16,14 +16,6 @@ interface AdminUser {
     [key: string]: any;
 }
 
-interface LeaderboardEntry {
-    id?: string;
-    name: string;
-    score: number;
-    mode: string;
-    photoURL?: string;
-    [key: string]: any;
-}
 
 const AdminPanel: React.FC = () => {
     // 1. Session & Auth State
@@ -37,7 +29,7 @@ const AdminPanel: React.FC = () => {
     const { isAdmin, adminLoading } = useAdmin();
     const [activeTab, setActiveTab] = useState<'users' | 'events' | 'stats' | 'leaderboard' | 'system'>('stats');
     const [users, setUsers] = useState<AdminUser[]>([]);
-    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+    const [leaderboard, setLeaderboard] = useState<(LeaderboardEntry & { id?: string })[]>([]);
     const [systemStats, setSystemStats] = useState<any>(null);
     const [globalSettings, setGlobalSettings] = useState<any>({ eventOverrides: {} });
     const [loading, setLoading] = useState(true);

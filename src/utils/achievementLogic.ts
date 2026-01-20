@@ -14,6 +14,7 @@ export interface GameEvent {
     activePowerUps?: string[];
     eventId?: string | null;
     itemType?: string;
+    novaBlasts?: number;
 }
 
 export const checkAchievements = (event: GameEvent): Achievement[] => {
@@ -107,6 +108,8 @@ export const checkAchievements = (event: GameEvent): Achievement[] => {
             case 'streak_3': return Math.min(player.longestStreak, 3);
             case 'streak_7': return Math.min(player.longestStreak, 7);
             case 'streak_30': return Math.min(player.longestStreak, 30);
+            case 'nova_1': return Math.min(event.novaBlasts || 0, 1);
+            case 'nova_10': return Math.min(event.novaBlasts || 0, 10);
 
             default: return 0;
         }

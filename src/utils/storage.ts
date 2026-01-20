@@ -20,8 +20,11 @@ export interface PlayerData {
     longestStreak: number;
     lastPlayDate: string;
     selectedSkin: string;
+    selectedHat: string;
+    selectedTrail: string;
     selectedTheme: string;
     unlockedSkins: string[];
+    unlockedHats: string[];
     unlockedThemes: string[];
     eventProgress?: Record<string, number>;
     unlockedBosses?: string[];
@@ -73,8 +76,11 @@ const defaultPlayerData: PlayerData = {
     longestStreak: 0,
     lastPlayDate: '',
     selectedSkin: 'default',
+    selectedHat: 'none',
+    selectedTrail: 'none',
     selectedTheme: 'default',
     unlockedSkins: ['default'],
+    unlockedHats: ['none'],
     unlockedThemes: ['default'],
 };
 

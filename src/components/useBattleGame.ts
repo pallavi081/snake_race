@@ -26,6 +26,8 @@ export interface Snake {
   magnet: boolean;
   novaMeter: number; // 0-100
   isNovaActive: boolean;
+  selectedHat?: string;
+  selectedTrail?: string;
 }
 
 export type PowerUpType = 'speed' | 'shield' | 'doubleXp' | 'magnet' | 'bomb';
@@ -86,7 +88,7 @@ const BASE_SPEED = 180;
 const MIN_SPEED = 80;
 
 export const useBattleGame = () => {
-  const { playSound, playExplosionSound } = useSound();
+  const { playExplosionSound } = useSound();
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [gameState, setGameState] = useState<BattleGameState>({
     snakes: [],
@@ -161,7 +163,7 @@ export const useBattleGame = () => {
       case 'JOIN':
         // New player joined (host only)
         if (isHostRef.current) {
-          const { name, color, peerId } = message.payload;
+          const { name, color, peerId, selectedHat, selectedTrail } = message.payload;
           const startPos = generateRandomPosition();
           const newSnake: Snake = {
             id: peerId,
@@ -181,7 +183,9 @@ export const useBattleGame = () => {
             doubleXp: false,
             magnet: false,
             novaMeter: 0,
-            isNovaActive: false
+            isNovaActive: false,
+            selectedHat,
+            selectedTrail
           };
 
           setGameState(prev => {
@@ -272,7 +276,7 @@ export const useBattleGame = () => {
   }, [handleMessage, broadcast]);
 
   // Create room (become host)
-  const createRoom = useCallback((playerName: string, playerColor: string, isPrivate: boolean = false) => {
+  const createRoom = useCallback((playerName: string, playerColor: string, isPrivate: boolean = false, selectedHat?: string, selectedTrail?: string) => {
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const myId = `host-${roomId}`;
     isHostRef.current = true;
@@ -315,7 +319,9 @@ export const useBattleGame = () => {
         doubleXp: false,
         magnet: false,
         novaMeter: 0,
-        isNovaActive: false
+        isNovaActive: false,
+        selectedHat,
+        selectedTrail
       };
 
       setGameState(prev => ({
@@ -349,7 +355,7 @@ export const useBattleGame = () => {
   }, [setupConnection, broadcast]);
 
   // Join room
-  const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string) => {
+  const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string, selectedHat?: string, selectedTrail?: string) => {
     const myId = `player-${Date.now()}`;
     isHostRef.current = false;
     myIdRef.current = myId;
@@ -382,7 +388,7 @@ export const useBattleGame = () => {
         // Send join message
         const joinMsg = {
           type: 'JOIN',
-          payload: { name: playerName, color: playerColor, peerId: myId },
+          payload: { name: playerName, color: playerColor, peerId: myId, selectedHat, selectedTrail },
           senderId: myId
         };
         console.log('📤 Sending JOIN:', joinMsg);
@@ -420,7 +426,7 @@ export const useBattleGame = () => {
   }, [handleMessage]);
 
   // Find and join a public quick match room
-  const findQuickMatch = useCallback(async (playerName: string, playerColor: string) => {
+  const findQuickMatch = useCallback(async (playerName: string, playerColor: string, selectedHat?: string, selectedTrail?: string) => {
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
 
     const availableRooms = await getAvailablePublicRooms();
@@ -428,10 +434,10 @@ export const useBattleGame = () => {
     if (availableRooms.length > 0) {
       // Join the first available room
       const room = availableRooms[0];
-      joinRoom(playerName, playerColor, room.roomId);
+      joinRoom(playerName, playerColor, room.roomId, selectedHat, selectedTrail);
     } else {
       // Create a new public room if none found
-      createRoom(playerName, playerColor, false);
+      createRoom(playerName, playerColor, false, selectedHat, selectedTrail);
     }
   }, [joinRoom, createRoom]);
 

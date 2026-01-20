@@ -59,12 +59,9 @@ export const ACHIEVEMENTS: Achievement[] = [
     { id: 'powerup_10', name: 'Power Hunter', description: 'Collect 10 power-ups', icon: '⚡', category: 'general', target: 10, reward: { coins: 30 } },
     { id: 'powerup_50', name: 'Power Addict', description: 'Collect 50 power-ups', icon: '🔋', category: 'general', target: 50, reward: { coins: 100 } },
 
-    // Secret
-    { id: 'speed_demon', name: 'Speed Demon', description: 'Win with max speed active', icon: '💨', category: 'secret', target: 1, reward: { coins: 200 } },
-    { id: 'pacifist', name: 'Pacifist', description: 'Win without any kills', icon: '☮️', category: 'secret', target: 1, reward: { coins: 300 } },
-    { id: 'perfect', name: 'Perfect', description: 'Win with full health/shield', icon: '💯', category: 'secret', target: 1, reward: { coins: 250 } },
-    { id: 'comeback', name: 'Comeback King', description: 'Win after being lowest', icon: '👑', category: 'secret', target: 1, reward: { coins: 200 } },
-    { id: 'explorer', name: 'Explorer', description: 'Visit all corners of map', icon: '🧭', category: 'secret', target: 1, reward: { coins: 100 } },
+    { id: 'powerup_50', name: 'Power Addict', description: 'Collect 50 power-ups', icon: '🔋', category: 'general', target: 50, reward: { coins: 100 } },
+    { id: 'nova_1', name: 'Boom!', description: 'Trigger your first Nova Blast', icon: '💥', category: 'general', target: 1, reward: { coins: 50 } },
+    { id: 'nova_10', name: 'Nova Master', description: 'Trigger 10 Nova Blasts', icon: '🚀', category: 'general', target: 10, reward: { coins: 200 } },
 ];
 
 export const getAchievementById = (id: string): Achievement | undefined => ACHIEVEMENTS.find(a => a.id === id);

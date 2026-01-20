@@ -104,7 +104,8 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
 
     // If we have a room to join from URL, skip menu and join directly
     if (joiningRoomId) {
-      joinRoom(playerName, selectedColor, joiningRoomId);
+      const p = storage.getPlayer();
+      joinRoom(playerName, selectedColor, joiningRoomId, p.selectedHat, p.selectedTrail);
       setMode('lobby');
       // Clear URL param after joining
       window.history.replaceState({}, '', window.location.pathname);
@@ -114,7 +115,8 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   };
 
   const handleCreateRoom = () => {
-    createRoom(playerName, selectedColor, isPrivate);
+    const p = storage.getPlayer();
+    createRoom(playerName, selectedColor, isPrivate, p.selectedHat, p.selectedTrail);
     setMode('lobby');
   };
 
@@ -123,16 +125,17 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
       alert('Please enter your name');
       return;
     }
-    findQuickMatch(playerName, selectedColor);
+    const p = storage.getPlayer();
+    findQuickMatch(playerName, selectedColor, p.selectedHat, p.selectedTrail);
     setMode('lobby');
   };
-
   const handleJoinRoom = () => {
     if (!inputRoomId.trim()) {
       alert('Please enter a Room ID');
       return;
     }
-    joinRoom(playerName, selectedColor, inputRoomId.toUpperCase());
+    const p = storage.getPlayer();
+    joinRoom(playerName, selectedColor, inputRoomId.toUpperCase(), p.selectedHat, p.selectedTrail);
     setMode('lobby');
   };
 

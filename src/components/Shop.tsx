@@ -1,30 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Lock, Check, ShoppingBag, Sparkles, CreditCard } from 'lucide-react';
 import { storage } from '../utils/storage';
-import { SKINS, THEMES, Skin, Theme } from '../data/skins';
+import { SKINS, THEMES, HATS, TRAILS, Skin, Theme, Hat, Trail } from '../data/skins';
 
 interface ShopProps {
     onClose: () => void;
     onPurchase?: () => void;
 }
 
+type ShopItem = Skin | Theme | Hat | Trail;
+type Category = 'skins' | 'themes' | 'hats' | 'trails';
+
 const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
-    const [tab, setTab] = useState<'skins' | 'themes'>('skins');
+    const [tab, setTab] = useState<Category>('skins');
     const [player, setPlayer] = useState(storage.getPlayer());
-    const [showPayment, setShowPayment] = useState<{ type: 'skin' | 'theme'; item: Skin | Theme } | null>(null);
+    const [showPayment, setShowPayment] = useState<{ type: Category; item: ShopItem } | null>(null);
     const [showUPI, setShowUPI] = useState(false);
 
     const refreshPlayer = () => setPlayer(storage.getPlayer());
 
-    const isUnlocked = (id: string, type: 'skin' | 'theme') => {
-        return type === 'skin' ? player.unlockedSkins.includes(id) : player.unlockedThemes.includes(id);
+    const isUnlocked = (id: string, type: Category) => {
+        if (type === 'skins') return player.unlockedSkins.includes(id);
+        if (type === 'themes') return player.unlockedThemes.includes(id);
+        if (type === 'hats') return player.unlockedHats.includes(id);
+        if (type === 'trails') return true; // Trails are free for now or unlock with skins
+        return true;
     };
 
-    const isSelected = (id: string, type: 'skin' | 'theme') => {
-        return type === 'skin' ? player.selectedSkin === id : player.selectedTheme === id;
+    const isSelected = (id: string, type: Category) => {
+        if (type === 'skins') return player.selectedSkin === id;
+        if (type === 'themes') return player.selectedTheme === id;
+        if (type === 'hats') return player.selectedHat === id;
+        if (type === 'trails') return player.selectedTrail === id;
+        return false;
     };
 
-    const handleBuy = (item: Skin | Theme, type: 'skin' | 'theme') => {
+    const handleBuy = (item: ShopItem, type: Category) => {
         if (item.isPremium) {
             setShowPayment({ type, item });
             return;
@@ -36,20 +47,25 @@ const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
         }
 
         const newCoins = player.coins - item.price;
-        const newUnlocked = type === 'skin'
-            ? [...player.unlockedSkins, item.id]
-            : [...player.unlockedThemes, item.id];
+        const saveObj: any = { coins: newCoins };
 
-        storage.savePlayer({
-            coins: newCoins,
-            ...(type === 'skin' ? { unlockedSkins: newUnlocked } : { unlockedThemes: newUnlocked }),
-        });
+        if (type === 'skins') saveObj.unlockedSkins = [...player.unlockedSkins, item.id];
+        else if (type === 'themes') saveObj.unlockedThemes = [...player.unlockedThemes, item.id];
+        else if (type === 'hats') saveObj.unlockedHats = [...player.unlockedHats, item.id];
+
+        storage.savePlayer(saveObj);
         refreshPlayer();
         onPurchase?.();
     };
 
-    const handleSelect = (id: string, type: 'skin' | 'theme') => {
-        storage.savePlayer(type === 'skin' ? { selectedSkin: id } : { selectedTheme: id });
+    const handleSelect = (id: string, type: Category) => {
+        const saveObj: any = {};
+        if (type === 'skins') saveObj.selectedSkin = id;
+        else if (type === 'themes') saveObj.selectedTheme = id;
+        else if (type === 'hats') saveObj.selectedHat = id;
+        else if (type === 'trails') saveObj.selectedTrail = id;
+
+        storage.savePlayer(saveObj);
         refreshPlayer();
     };
 
@@ -58,15 +74,17 @@ const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
         const amount = showPayment.item.premiumPrice;
         const upiLink = `upi://pay?pa=9931322271@ptyes&pn=SnakeRace&am=${amount}&cu=INR&tn=Premium_${showPayment.item.id}`;
         window.location.href = upiLink;
-        // Show manual verification after
+
         setTimeout(() => {
             const confirmed = confirm('Did you complete the payment? Click OK to unlock.');
             if (confirmed) {
                 const type = showPayment.type;
-                const newUnlocked = type === 'skin'
-                    ? [...player.unlockedSkins, showPayment.item.id]
-                    : [...player.unlockedThemes, showPayment.item.id];
-                storage.savePlayer(type === 'skin' ? { unlockedSkins: newUnlocked } : { unlockedThemes: newUnlocked });
+                const saveObj: any = {};
+                if (type === 'skins') saveObj.unlockedSkins = [...player.unlockedSkins, showPayment.item.id];
+                else if (type === 'themes') saveObj.unlockedThemes = [...player.unlockedThemes, showPayment.item.id];
+                else if (type === 'hats') saveObj.unlockedHats = [...player.unlockedHats, showPayment.item.id];
+
+                storage.savePlayer(saveObj);
                 refreshPlayer();
                 setShowPayment(null);
                 setShowUPI(false);
@@ -74,10 +92,18 @@ const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
         }, 3000);
     };
 
-    const renderItem = (item: Skin | Theme, type: 'skin' | 'theme') => {
+    const renderItem = (item: ShopItem, type: Category) => {
         const unlocked = isUnlocked(item.id, type);
         const selected = isSelected(item.id, type);
-        const color = 'color' in item ? item.color : item.bgColor;
+        let color = '#333';
+        let preview: React.ReactNode = '🐍';
+
+        if ('color' in item) color = item.color;
+        if ('bgColor' in item) color = item.bgColor;
+
+        if (type === 'themes') preview = '🗺️';
+        if (type === 'hats') preview = (item as Hat).icon || '❓';
+        if (type === 'trails') preview = '✨';
 
         return (
             <div
@@ -85,16 +111,14 @@ const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
                 className={`relative p-3 rounded-lg border-2 transition-all ${selected ? 'border-green-500 bg-green-500/10' : unlocked ? 'border-gray-600 bg-gray-700/50' : 'border-gray-700 bg-gray-800/50'
                     }`}
             >
-                {/* Preview */}
                 <div
-                    className="w-full h-16 rounded-lg mb-2 flex items-center justify-center"
+                    className="w-full h-16 rounded-lg mb-2 flex items-center justify-center text-3xl"
                     style={{ background: 'gradient' in item && item.gradient ? `linear-gradient(90deg, ${item.gradient.join(', ')})` : color }}
                 >
-                    {type === 'skin' ? '🐍' : '🗺️'}
+                    {preview}
                 </div>
 
-                {/* Name & Price */}
-                <div className="text-sm font-medium truncate">{item.name}</div>
+                <div className="text-sm font-bold truncate">{item.name}</div>
                 <div className="flex items-center justify-between mt-1">
                     {unlocked ? (
                         selected ? (
@@ -102,31 +126,30 @@ const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
                         ) : (
                             <button
                                 onClick={() => handleSelect(item.id, type)}
-                                className="text-xs text-blue-400 hover:text-blue-300"
+                                className="text-xs text-blue-400 hover:text-blue-300 font-bold"
                             >
                                 Select
                             </button>
                         )
                     ) : item.isPremium ? (
-                        <span className="text-xs text-purple-400 flex items-center gap-1">
+                        <span className="text-xs text-purple-400 flex items-center gap-1 font-bold">
                             <Sparkles size={12} /> ₹{item.premiumPrice}
                         </span>
                     ) : (
-                        <span className="text-xs text-yellow-400">🪙 {item.price}</span>
+                        <span className="text-xs text-yellow-400 font-bold">🪙 {item.price}</span>
                     )}
 
                     {!unlocked && (
                         <button
                             onClick={() => handleBuy(item, type)}
-                            className={`text-xs px-2 py-1 rounded ${item.isPremium ? 'bg-purple-600 hover:bg-purple-500' : 'bg-yellow-600 hover:bg-yellow-500'
+                            className={`text-xs px-2 py-1 rounded font-bold ${item.isPremium ? 'bg-purple-600 hover:bg-purple-500' : 'bg-yellow-600 hover:bg-yellow-500'
                                 }`}
                         >
-                            {item.isPremium ? 'Buy' : 'Buy'}
+                            Buy
                         </button>
                     )}
                 </div>
 
-                {/* Lock Icon */}
                 {!unlocked && (
                     <div className="absolute top-2 right-2">
                         <Lock size={14} className="text-gray-500" />
@@ -137,53 +160,55 @@ const Shop: React.FC<ShopProps> = ({ onClose, onPurchase }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-            <div className="bg-gray-800 rounded-xl w-full max-w-lg max-h-[85vh] flex flex-col border border-gray-700">
-                {/* Header */}
-                <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
+            <div className="bg-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-700 shadow-2xl overflow-hidden">
+                <div className="p-4 border-b border-gray-700 flex items-center justify-between bg-gray-800/50">
+                    <h2 className="text-2xl font-black flex items-center gap-2 italic uppercase tracking-wider">
                         <ShoppingBag className="text-purple-400" /> Shop
                     </h2>
-                    <div className="flex items-center gap-3">
-                        <span className="text-yellow-400 font-bold">🪙 {player.coins}</span>
-                        <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-gray-900 px-4 py-1.5 rounded-full border border-yellow-500/30 flex items-center gap-2">
+                            <span className="text-yellow-400 font-black">🪙 {player.coins}</span>
+                        </div>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-700 rounded-full transition-colors">
                             <X size={24} />
                         </button>
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="p-2 border-b border-gray-700 flex gap-2">
-                    <button
-                        onClick={() => setTab('skins')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium ${tab === 'skins' ? 'bg-blue-600' : 'bg-gray-700'}`}
-                    >
-                        🐍 Skins
-                    </button>
-                    <button
-                        onClick={() => setTab('themes')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium ${tab === 'themes' ? 'bg-blue-600' : 'bg-gray-700'}`}
-                    >
-                        🗺️ Themes
-                    </button>
+                <div className="p-2 border-b border-gray-700 flex gap-2 bg-gray-900/50 overflow-x-auto">
+                    {[
+                        { id: 'skins', label: 'Skins', icon: '🐍' },
+                        { id: 'hats', label: 'Hats', icon: '👑' },
+                        { id: 'trails', label: 'Trails', icon: '✨' },
+                        { id: 'themes', label: 'Themes', icon: '🗺️' }
+                    ].map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => setTab(t.id as Category)}
+                            className={`flex-1 py-3 px-4 rounded-xl text-sm font-black whitespace-nowrap transition-all flex items-center justify-center gap-2 ${tab === t.id ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-gray-800 hover:bg-gray-700 text-gray-400'}`}
+                        >
+                            <span>{t.icon}</span>
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Items Grid */}
-                <div className="flex-1 overflow-y-auto p-3">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {tab === 'skins'
-                            ? SKINS.map(s => renderItem(s, 'skin'))
-                            : THEMES.map(t => renderItem(t, 'theme'))}
+                <div className="flex-1 overflow-y-auto p-4 bg-gray-900/20">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {tab === 'skins' && SKINS.map(s => renderItem(s, 'skins'))}
+                        {tab === 'themes' && THEMES.map(t => renderItem(t, 'themes'))}
+                        {tab === 'hats' && HATS.map(h => renderItem(h, 'hats'))}
+                        {tab === 'trails' && TRAILS.map(tr => renderItem(tr, 'trails'))}
                     </div>
                 </div>
 
-                {/* Premium Info */}
-                <div className="p-3 border-t border-gray-700 text-center text-xs text-gray-400">
-                    <Sparkles size={14} className="inline text-purple-400" /> Premium items unlock exclusive designs
+                <div className="p-4 border-t border-gray-700 bg-gray-800/50 flex items-center justify-center gap-3">
+                    <Sparkles size={18} className="text-purple-400 animate-pulse" />
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Premium items unlock exclusive effects & styles</p>
                 </div>
             </div>
 
-            {/* Payment Modal */}
             {showPayment && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4">
                     <div className="bg-gray-800 rounded-xl p-6 w-full max-w-sm border border-purple-500">

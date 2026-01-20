@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trophy, Medal, Award, Calendar, Clock, Globe, HardDrive } from 'lucide-react';
 import { storage, LeaderboardEntry } from '../utils/storage';
-import { getGlobalLeaderboard, LeaderboardEntry as GlobalEntry } from '../utils/cloudStorage';
+import { onLeaderboardChange, LeaderboardEntry as GlobalEntry } from '../utils/cloudStorage';
 
 interface LeaderboardProps {
     onClose: () => void;
@@ -30,16 +30,16 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onClose }) => {
         }
     }, [tab, timeFilter, source]);
 
-    // Load global entries
+    // Load global entries with real-time listener
     useEffect(() => {
         if (source === 'global') {
             setLoadingGlobal(true);
-            getGlobalLeaderboard(tab === 'all' ? undefined : tab)
-                .then((data) => {
-                    setGlobalEntries(data);
-                    setLoadingGlobal(false);
-                })
-                .catch(() => setLoadingGlobal(false));
+            const unsubscribe = onLeaderboardChange((data) => {
+                setGlobalEntries(data);
+                setLoadingGlobal(false);
+            }, tab === 'all' ? undefined : tab);
+
+            return () => unsubscribe();
         }
     }, [tab, source]);
 

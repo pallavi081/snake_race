@@ -103,7 +103,7 @@ export const addToGlobalLeaderboard = async (entry: LeaderboardEntry): Promise<v
     }
 };
 
-// Get global leaderboard (top 50)
+// Get global leaderboard (top 50) - one off fetch
 export const getGlobalLeaderboard = async (mode?: string): Promise<LeaderboardEntry[]> => {
     try {
         const leaderboardRef = collection(db, 'leaderboard');
@@ -114,7 +114,37 @@ export const getGlobalLeaderboard = async (mode?: string): Promise<LeaderboardEn
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            // Filter by mode if specified
+            if (!mode || data.mode === mode) {
+                entries.push({
+                    id: doc.id,
+                    name: data.name,
+                    score: data.score,
+                    mode: data.mode,
+                    level: data.level,
+                    kills: data.kills,
+                    userId: data.userId,
+                    photoURL: data.photoURL,
+                    timestamp: data.timestamp
+                } as LeaderboardEntry & { id: string });
+            }
+        });
+
+        return entries;
+    } catch (error) {
+        console.error('❌ Failed to get leaderboard:', error);
+        return [];
+    }
+};
+
+// Set up a listener for global leaderboard
+export const onLeaderboardChange = (callback: (entries: LeaderboardEntry[]) => void, mode?: string): (() => void) => {
+    const leaderboardRef = collection(db, 'leaderboard');
+    let q = query(leaderboardRef, orderBy('score', 'desc'), limit(50));
+
+    return onSnapshot(q, (snapshot) => {
+        const entries: LeaderboardEntry[] = [];
+        snapshot.forEach((doc) => {
+            const data = doc.data();
             if (!mode || data.mode === mode) {
                 entries.push({
                     name: data.name,
@@ -125,16 +155,13 @@ export const getGlobalLeaderboard = async (mode?: string): Promise<LeaderboardEn
                     userId: data.userId,
                     photoURL: data.photoURL,
                     timestamp: data.timestamp
-                });
+                } as LeaderboardEntry);
             }
         });
-
-        console.log(`✅ Loaded ${entries.length} leaderboard entries`);
-        return entries;
-    } catch (error) {
-        console.error('❌ Failed to get leaderboard:', error);
-        return [];
-    }
+        callback(entries);
+    }, (error) => {
+        console.error('❌ Failed to listen to leaderboard:', error);
+    });
 };
 
 // Save puzzle progress

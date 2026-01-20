@@ -224,6 +224,41 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
     gameState.snakes.forEach(snake => {
       if (snake.isDead) return;
 
+      const head = snake.body[0];
+
+      // --- Trail Rendering ---
+      if (snake.selectedTrail && snake.selectedTrail !== 'none') {
+        ctx.save();
+        snake.body.forEach((seg, idx) => {
+          if (idx === 0) return;
+          const opacity = Math.max(0, 1 - (idx / snake.body.length));
+          if (snake.selectedTrail === 'fire') {
+            ctx.fillStyle = `rgba(255, 69, 0, ${opacity * 0.5})`;
+            ctx.shadowColor = '#ff4500';
+            ctx.shadowBlur = 10;
+          } else if (snake.selectedTrail === 'rainbow') {
+            const h = (idx * 20 + Date.now() / 10) % 360;
+            ctx.fillStyle = `hsla(${h}, 70%, 50%, ${opacity * 0.5})`;
+            ctx.shadowColor = `hsl(${h}, 70%, 50%)`;
+            ctx.shadowBlur = 10;
+          } else if (snake.selectedTrail === 'sparkle') {
+            ctx.fillStyle = `rgba(252, 211, 77, ${opacity * 0.3})`;
+            ctx.shadowColor = '#fcd34d';
+            ctx.shadowBlur = 5;
+          } else if (snake.selectedTrail === 'void') {
+            ctx.fillStyle = `rgba(76, 29, 149, ${opacity * 0.6})`;
+            ctx.shadowColor = '#4c1d95';
+            ctx.shadowBlur = 15;
+          }
+
+          ctx.beginPath();
+          ctx.arc(seg.x * gridSize + gridSize / 2, seg.y * gridSize + gridSize / 2, (gridSize / 2) * opacity, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      // --- Snake Body ---
       ctx.fillStyle = snake.color;
       snake.body.forEach((seg, idx) => {
         if (idx === 0) {
@@ -238,8 +273,22 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
         ctx.fill();
       });
 
+      // --- Hat Rendering ---
+      if (snake.selectedHat && snake.selectedHat !== 'none') {
+        const hatIcons: Record<string, string> = {
+          crown: '👑', cowboy: '🤠', pirate: '🏴‍☠️', viking: '⚔️',
+          ninja: '🥷', wizard: '🧙', tophat: '🎩', royal_crown: '🔱'
+        };
+        const icon = hatIcons[snake.selectedHat];
+        if (icon) {
+          ctx.font = '16px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(icon, head.x * gridSize + gridSize / 2, head.y * gridSize - 5);
+        }
+      }
+
       // Shield indicator
-      const head = snake.body[0];
       if (snake.shield) {
         ctx.strokeStyle = '#a855f7';
         ctx.lineWidth = 3;
@@ -254,10 +303,10 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
       ctx.textAlign = 'center';
       ctx.shadowColor = '#000';
       ctx.shadowBlur = 3;
-      ctx.fillText(`${snake.name}`, head.x * gridSize + gridSize / 2, head.y * gridSize - 10);
+      ctx.fillText(`${snake.name}`, head.x * gridSize + gridSize / 2, head.y * gridSize - 18);
       ctx.font = '9px Arial';
       ctx.fillStyle = '#fbbf24';
-      ctx.fillText(`Lv.${snake.level}`, head.x * gridSize + gridSize / 2, head.y * gridSize - 22);
+      ctx.fillText(`Lv.${snake.level}`, head.x * gridSize + gridSize / 2, head.y * gridSize - 30);
       ctx.shadowBlur = 0;
     });
 
