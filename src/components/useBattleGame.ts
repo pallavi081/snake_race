@@ -4,6 +4,8 @@ import Peer, { DataConnection } from 'peerjs';
 import { Position, Direction } from '../types/game';
 import { checkWallCollision, getOppositeDirection, GRID_SIZE } from '../utils/gameLogic';
 import { Achievement } from '../data/achievements';
+import { useSound } from '../hooks/useSound';
+import { registerPublicRoom, updatePublicRoom, deletePublicRoom, getAvailablePublicRooms } from '../utils/cloudStorage';
 
 export interface Snake {
   id: string;
@@ -22,6 +24,8 @@ export interface Snake {
   speedBoost: boolean;
   doubleXp: boolean;
   magnet: boolean;
+  novaMeter: number; // 0-100
+  isNovaActive: boolean;
 }
 
 export type PowerUpType = 'speed' | 'shield' | 'doubleXp' | 'magnet' | 'bomb';
@@ -52,6 +56,7 @@ export interface BattleGameState {
   connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
   connectedPeers: number;
   eliminatedPlayers: { id: string; name: string; time: number; killedBy?: string }[];
+  lastBlast?: { x: number; y: number; time: number };
 }
 
 interface PeerMessage {
@@ -81,6 +86,7 @@ const BASE_SPEED = 180;
 const MIN_SPEED = 80;
 
 export const useBattleGame = () => {
+  const { playSound, playExplosionSound } = useSound();
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [gameState, setGameState] = useState<BattleGameState>({
     snakes: [],
@@ -173,7 +179,9 @@ export const useBattleGame = () => {
             shield: false,
             speedBoost: false,
             doubleXp: false,
-            magnet: false
+            magnet: false,
+            novaMeter: 0,
+            isNovaActive: false
           };
 
           setGameState(prev => {
@@ -305,7 +313,9 @@ export const useBattleGame = () => {
         shield: false,
         speedBoost: false,
         doubleXp: false,
-        magnet: false
+        magnet: false,
+        novaMeter: 0,
+        isNovaActive: false
       };
 
       setGameState(prev => ({
@@ -316,9 +326,13 @@ export const useBattleGame = () => {
         waitingForPlayers: true,
         isPrivate,
         isConnected: true,
-        connectionStatus: 'connected',
         gameTime: 0
       }));
+
+      // Register public room in Firestore
+      if (!isPrivate) {
+        registerPublicRoom(roomId, `snake-${roomId}`, playerName, false);
+      }
     });
 
     peer.on('connection', (conn) => {
@@ -332,7 +346,7 @@ export const useBattleGame = () => {
     });
 
     return roomId;
-  }, [setupConnection]);
+  }, [setupConnection, broadcast]);
 
   // Join room
   const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string) => {
@@ -405,6 +419,22 @@ export const useBattleGame = () => {
     });
   }, [handleMessage]);
 
+  // Find and join a public quick match room
+  const findQuickMatch = useCallback(async (playerName: string, playerColor: string) => {
+    setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
+
+    const availableRooms = await getAvailablePublicRooms();
+
+    if (availableRooms.length > 0) {
+      // Join the first available room
+      const room = availableRooms[0];
+      joinRoom(playerName, playerColor, room.roomId);
+    } else {
+      // Create a new public room if none found
+      createRoom(playerName, playerColor, false);
+    }
+  }, [joinRoom, createRoom]);
+
   // Start game (host only)
   const startGame = useCallback(() => {
     if (!isHostRef.current) return;
@@ -437,7 +467,12 @@ export const useBattleGame = () => {
 
     // Tell all clients to start
     broadcast({ type: 'START', payload: {} });
-  }, [broadcast]);
+
+    // Update public room status if public
+    if (!gameState.isPrivate && gameState.roomId) {
+      updatePublicRoom(gameState.roomId, { status: 'active' });
+    }
+  }, [broadcast, gameState.isPrivate, gameState.roomId]);
 
   // Change direction
   const changeDirection = useCallback((newDirection: Direction) => {
@@ -451,6 +486,22 @@ export const useBattleGame = () => {
       });
     }
   }, [broadcast, gameState.myId]);
+
+  // Activate Nova Mode (Boom Blaster)
+  const activateNovaMode = useCallback(() => {
+    setGameState(prev => {
+      const mySnake = prev.snakes.find(s => s.id === prev.myId);
+      if (!mySnake || mySnake.isDead || mySnake.novaMeter < 100 || mySnake.isNovaActive) return prev;
+
+      // Broadcast Nova activation
+      broadcast({ type: 'GAME_STATE', payload: { ...prev, snakes: prev.snakes.map(s => s.id === prev.myId ? { ...s, isNovaActive: true } : s) } });
+
+      return {
+        ...prev,
+        snakes: prev.snakes.map(s => s.id === prev.myId ? { ...s, isNovaActive: true, novaMeter: 0 } : s)
+      };
+    });
+  }, [broadcast]);
 
   // Reset game
   const resetGame = useCallback(() => {
@@ -473,6 +524,8 @@ export const useBattleGame = () => {
         shield: false,
         doubleXp: false,
         magnet: false,
+        novaMeter: 0,
+        isNovaActive: false,
         score: 0,
       }))
     }));
@@ -591,8 +644,54 @@ export const useBattleGame = () => {
             }
           }
 
-          return snake;
+          // Nova Mode Charging & Passive Gain
+          let newNovaMeter = snake.novaMeter;
+          if (!snake.isNovaActive && newNovaMeter < 100) {
+            newNovaMeter = Math.min(100, newNovaMeter + 0.1); // Passive gain
+          }
+
+          return { ...snake, novaMeter: newNovaMeter };
         });
+
+        // --- NOVA BLAST COLLISION (AOE) ---
+        const activeNovaSnakes = newSnakes.filter(s => s.isNovaActive);
+        let goldenGems: Position[] = [];
+        let blastPos: Position | null = null;
+
+        if (activeNovaSnakes.length > 0) {
+          const BLAST_RADIUS = 6;
+          blastPos = activeNovaSnakes[0].body[0];
+
+          activeNovaSnakes.forEach(novaSnake => {
+            const head = novaSnake.body[0];
+            newSnakes = newSnakes.map(target => {
+              if (target.id === novaSnake.id || target.isDead) return target;
+              const isHit = target.body.some(seg => {
+                const dx = Math.abs(seg.x - head.x);
+                const dy = Math.abs(seg.y - head.y);
+                return Math.sqrt(dx * dx + dy * dy) <= BLAST_RADIUS;
+              });
+              if (isHit) {
+                target.body.forEach(seg => {
+                  if (Math.random() < 0.7) goldenGems.push(seg);
+                });
+                return { ...target, isDead: true };
+              }
+              return target;
+            });
+          });
+
+          // Reset Nova flag
+          newSnakes = newSnakes.map(s => ({ ...s, isNovaActive: false }));
+        }
+
+        // Add golden gems
+        if (goldenGems.length > 0) {
+          newFoods = [...newFoods, ...goldenGems];
+        }
+
+        const lastBlast = blastPos ? { x: blastPos.x, y: blastPos.y, time: Date.now() } : prev.lastBlast;
+        if (blastPos) playExplosionSound();
 
         // Track newly eliminated players
         const newlyEliminated: { id: string; name: string; time: number; killedBy?: string }[] = [];
@@ -637,7 +736,7 @@ export const useBattleGame = () => {
           gameOver = true;
         }
 
-        const newState = { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner, eliminatedPlayers };
+        const newState = { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner, eliminatedPlayers, lastBlast };
 
         // Sync state to clients
         if (isHostRef.current) {
@@ -674,10 +773,15 @@ export const useBattleGame = () => {
   useEffect(() => {
     return () => {
       connectionsRef.current.forEach(conn => conn.close());
-      if (peerRef.current) peerRef.current.destroy();
+      if (peerRef.current) {
+        if (isHostRef.current && gameState.roomId) {
+          deletePublicRoom(gameState.roomId);
+        }
+        peerRef.current.destroy();
+      }
       if (gameLoopRef.current) clearTimeout(gameLoopRef.current);
     };
-  }, []);
+  }, [gameState.roomId]);
 
   return {
     gameState,
@@ -687,6 +791,8 @@ export const useBattleGame = () => {
     startGame,
     resetGame,
     getXpForNextLevel,
+    findQuickMatch,
+    activateNovaMode,
     SNAKE_COLORS,
     unlockedAchievements,
     clearAchievements: () => setUnlockedAchievements([])

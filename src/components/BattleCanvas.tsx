@@ -131,6 +131,14 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
       cameraY = Math.max(0, Math.min(cameraY, gameState.canvasHeight - viewportSize.height));
     }
 
+    // --- Screen Shake Logic ---
+    const shakeTime = Date.now() - (gameState.lastBlast?.time || 0);
+    if (shakeTime < 500) {
+      const intensity = (1 - shakeTime / 500) * 10;
+      cameraX += (Math.random() - 0.5) * intensity;
+      cameraY += (Math.random() - 0.5) * intensity;
+    }
+
     // Clear
     ctx.fillStyle = theme.bgColor;
     ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
@@ -175,16 +183,42 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
     });
     ctx.shadowBlur = 0;
 
-    // Food
-    ctx.fillStyle = '#fbbf24';
-    ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 8;
-    gameState.foods.forEach(food => {
+    // Food & Golden Gems
+    gameState.foods.forEach((food, idx) => {
+      // Every 3rd food spawned from a blast has an extra large glow
+      const isExtraGolden = idx % 5 === 0;
+
+      ctx.fillStyle = isExtraGolden ? '#fcd34d' : '#fbbf24';
+      ctx.shadowColor = isExtraGolden ? '#f59e0b' : '#fbbf24';
+      ctx.shadowBlur = isExtraGolden ? 15 : 8;
+
       ctx.beginPath();
-      ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 3, 0, Math.PI * 2);
+      const radius = isExtraGolden ? gridSize / 2.5 : gridSize / 3;
+      ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, radius, 0, Math.PI * 2);
       ctx.fill();
     });
     ctx.shadowBlur = 0;
+
+    // --- Shockwave Animation ---
+    if (gameState.lastBlast) {
+      const dt = Date.now() - gameState.lastBlast.time;
+      if (dt < 1000) {
+        const progress = dt / 1000;
+        const radius = progress * 200; // Expands to 200px
+        ctx.strokeStyle = `rgba(251, 191, 36, ${1 - progress})`;
+        ctx.lineWidth = 10 * (1 - progress);
+        ctx.beginPath();
+        ctx.arc(gameState.lastBlast.x * gridSize + gridSize / 2, gameState.lastBlast.y * gridSize + gridSize / 2, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Secondary fire ring
+        ctx.strokeStyle = `rgba(239, 68, 68, ${1 - progress})`;
+        ctx.lineWidth = 4 * (1 - progress);
+        ctx.beginPath();
+        ctx.arc(gameState.lastBlast.x * gridSize + gridSize / 2, gameState.lastBlast.y * gridSize + gridSize / 2, radius * 0.7, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
 
     // Snakes
     gameState.snakes.forEach(snake => {

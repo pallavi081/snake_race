@@ -6,7 +6,7 @@ import PhysicsGame from './components/PhysicsGame.tsx';
 import LevelEditor from './components/LevelEditor.tsx';
 import BattleGame from './components/BattleGame.tsx';
 import AdminPanel from './components/AdminPanel.tsx';
-import { getGlobalSettings } from './utils/cloudStorage';
+import { onGlobalSettingsChange } from './utils/cloudStorage';
 import { AlertTriangle, Megaphone } from 'lucide-react';
 import { getEffectiveActiveEventId } from './data/seasonalEvents';
 
@@ -24,19 +24,10 @@ function App() {
   const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const s = await getGlobalSettings();
-        setSettings(s);
-      } catch (e) {
-        console.error('Failed to fetch settings');
-      }
-    };
-    fetchSettings();
-
-    // Re-check settings every 2 minutes for maintenance mode or announcements
-    const interval = setInterval(fetchSettings, 120000);
-    return () => clearInterval(interval);
+    const unsubscribe = onGlobalSettingsChange((s) => {
+      setSettings(s);
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {

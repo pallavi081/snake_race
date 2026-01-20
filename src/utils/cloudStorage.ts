@@ -10,7 +10,10 @@ import {
     limit,
     getDocs,
     serverTimestamp,
-    Timestamp
+    Timestamp,
+    onSnapshot,
+    deleteDoc,
+    where
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -173,7 +176,62 @@ export const loadPuzzleProgress = async (userId: string): Promise<{ currentLevel
     }
 };
 
-// --- Admin Methods ---
+// --- Public Room Management (for Quick Match) ---
+
+export const registerPublicRoom = async (roomId: string, peerId: string, name: string, isPrivate: boolean): Promise<void> => {
+    if (isPrivate) return;
+    try {
+        const roomRef = doc(db, 'public_rooms', roomId);
+        await setDoc(roomRef, {
+            roomId,
+            hostPeerId: peerId,
+            hostName: name,
+            playerCount: 1,
+            status: 'waiting',
+            lastUpdated: serverTimestamp()
+        });
+    } catch (error) {
+        console.error('❌ Failed to register public room:', error);
+    }
+};
+
+export const updatePublicRoom = async (roomId: string, data: any): Promise<void> => {
+    try {
+        const roomRef = doc(db, 'public_rooms', roomId);
+        await setDoc(roomRef, {
+            ...data,
+            lastUpdated: serverTimestamp()
+        }, { merge: true });
+    } catch (error) {
+        // Room might have been deleted, ignore
+    }
+};
+
+export const deletePublicRoom = async (roomId: string): Promise<void> => {
+    try {
+        const roomRef = doc(db, 'public_rooms', roomId);
+        await deleteDoc(roomRef);
+    } catch (error) {
+        console.error('❌ Failed to delete public room:', error);
+    }
+};
+
+export const getAvailablePublicRooms = async (): Promise<any[]> => {
+    try {
+        const roomsRef = collection(db, 'public_rooms');
+        const q = query(
+            roomsRef,
+            where('status', '==', 'waiting'),
+            orderBy('lastUpdated', 'desc'),
+            limit(10)
+        );
+        const snap = await getDocs(q);
+        return snap.docs.map(doc => doc.data());
+    } catch (error) {
+        console.error('❌ Failed to get public rooms:', error);
+        return [];
+    }
+};
 
 // Get global settings (e.g., event overrides)
 export const getGlobalSettings = async (): Promise<any> => {
@@ -200,6 +258,20 @@ export const updateGlobalSettings = async (settings: any): Promise<void> => {
         console.error('❌ Failed to update global settings:', error);
         throw error;
     }
+};
+
+// Set up a listener for global settings
+export const onGlobalSettingsChange = (callback: (settings: any) => void): (() => void) => {
+    const settingsRef = doc(db, 'settings', 'global');
+    return onSnapshot(settingsRef, (snap) => {
+        if (snap.exists()) {
+            callback(snap.data());
+        } else {
+            callback({});
+        }
+    }, (error) => {
+        console.error('❌ Failed to listen to global settings:', error);
+    });
 };
 
 // Get all users (for admin management)

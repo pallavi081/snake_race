@@ -27,6 +27,7 @@ import {
 import { getSkinById, getThemeById } from '../data/skins';
 import { checkAchievements, GameEvent } from '../utils/achievementLogic';
 import { Achievement } from '../data/achievements';
+import { SEASONAL_EVENTS } from '../data/seasonalEvents';
 
 const HIGH_SCORE_KEY = 'snake-high-score';
 const SETTINGS_KEY = 'snake-settings';
@@ -93,6 +94,22 @@ export const useSnakeGame = (activeEvent: string | null = null) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (activeEvent) {
+      const event = SEASONAL_EVENTS.find(e => e.id === activeEvent);
+      if (event) {
+        setSettings(prev => ({
+          ...prev,
+          foodColor: event.colors.accent,
+          gridColor: `${event.colors.primary}20`,
+          borderColor: event.colors.primary,
+        }));
+      }
+    } else {
+      setSettings(getInitialSettings());
+    }
+  }, [activeEvent]);
 
   const setDifficulty = (newDifficulty: Difficulty) => {
     setDifficultyState(newDifficulty);
@@ -343,7 +360,7 @@ export const useSnakeGame = (activeEvent: string | null = null) => {
         speed: getGameSpeed(prevState.level, newActivePowerUp, prevState.difficulty)
       };
     });
-  }, [playSound, customObstacles]);
+  }, [playSound, customObstacles, activeEvent]);
 
   useEffect(() => {
     if (gameState.gameStarted && !gameState.gameOver && !isPaused) {

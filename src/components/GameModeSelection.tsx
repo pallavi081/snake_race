@@ -303,7 +303,10 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <p className="text-gray-400 text-xs md:text-sm hidden md:block mt-2">Gravity & physics mechanics</p>
           </div>
 
-          <div className="p-4 md:p-6 rounded-xl border-2 border-gray-700 hover:border-red-500 bg-gray-800 cursor-pointer hover:scale-105 transition-all" onClick={() => onSelectMode('battle')}>
+          <div className="relative p-4 md:p-6 rounded-xl border-2 border-gray-700 hover:border-red-500 bg-gray-800 cursor-pointer hover:scale-105 transition-all group/battle" onClick={() => onSelectMode('battle')}>
+            <div className="absolute -top-3 -right-2 bg-gradient-to-r from-orange-600 via-red-600 to-orange-600 px-3 py-1 rounded-full text-[10px] font-black shadow-lg shadow-red-900/40 border border-orange-400/30 animate-pulse z-30 flex items-center gap-1 group-hover/battle:scale-110 transition-transform">
+              🔥 NEW: BOOM BLASTER
+            </div>
             <Swords size={32} className="text-red-500 mb-2 mx-auto md:mx-0" />
             <h2 className="text-lg md:text-xl font-bold text-center md:text-left">Battle</h2>
             <p className="text-gray-400 text-xs md:text-sm hidden md:block mt-2">Multiplayer battle royale</p>

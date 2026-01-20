@@ -15,7 +15,7 @@ interface BattleGameProps {
 }
 
 const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
-  const { gameState, changeDirection, createRoom, joinRoom, startGame, resetGame, getXpForNextLevel, unlockedAchievements, clearAchievements } = useBattleGame();
+  const { gameState, changeDirection, createRoom, joinRoom, findQuickMatch, activateNovaMode, startGame, resetGame, getXpForNextLevel, unlockedAchievements, clearAchievements } = useBattleGame();
   const [playerName, setPlayerName] = useState('');
   const [selectedColor, setSelectedColor] = useState(SNAKE_COLORS[0].color);
   const [inputRoomId, setInputRoomId] = useState('');
@@ -49,6 +49,16 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
   useEffect(() => {
     if (gameState.gameStarted) setMode('game');
   }, [gameState.gameStarted]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (mode === 'game' && e.code === 'Space') {
+        activateNovaMode();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, activateNovaMode]);
 
   // Handle new achievements
   useEffect(() => {
@@ -105,6 +115,15 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
 
   const handleCreateRoom = () => {
     createRoom(playerName, selectedColor, isPrivate);
+    setMode('lobby');
+  };
+
+  const handleQuickMatch = () => {
+    if (!playerName.trim()) {
+      alert('Please enter your name');
+      return;
+    }
+    findQuickMatch(playerName, selectedColor);
     setMode('lobby');
   };
 
@@ -248,6 +267,13 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
               <Users size={18} /> Create Room
             </button>
 
+            <button
+              onClick={handleQuickMatch}
+              className="w-full py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-orange-900/20"
+            >
+              <Globe size={18} /> Quick Play
+            </button>
+
             <div className="flex items-center gap-2 text-gray-500 text-xs">
               <div className="flex-1 h-px bg-gray-700"></div>
               OR JOIN
@@ -289,9 +315,9 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
 
             {/* Connection Status */}
             <div className="flex items-center justify-center gap-2 mb-2">
-              <div className={`w-2 h-2 rounded-full ${gameState.connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : gameState.connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${gameState.connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : (gameState.connectionStatus as string) === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
               <span className="text-[10px] text-gray-400">
-                {gameState.connectionStatus === 'connected' ? 'P2P Connected' : gameState.connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+                {gameState.connectionStatus === 'connected' ? 'P2P Connected' : (gameState.connectionStatus as string) === 'connecting' ? 'Connecting...' : 'Disconnected'}
               </span>
             </div>
 
@@ -353,6 +379,19 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
                 <span className="text-blue-400">{mySnake.xp}XP</span>
                 <span className="text-red-400">💀{mySnake.kills}</span>
                 <span className="text-gray-400 flex items-center gap-0.5"><Clock size={10} />{gameState.gameTime}s</span>
+              </div>
+
+              {/* Nova Meter */}
+              <div className="absolute top-12 left-1/2 -translate-x-1/2 w-48 h-1.5 bg-gray-900 rounded-full border border-gray-700 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${mySnake.novaMeter >= 100 ? 'bg-orange-500 animate-pulse ring-1 ring-white shadow-[0_0_10px_rgba(249,115,22,0.8)]' : 'bg-blue-500'}`}
+                  style={{ width: `${mySnake.novaMeter}%` }}
+                />
+                {mySnake.novaMeter >= 100 && (
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold text-orange-400 animate-bounce">
+                    PRESS SPACE FOR BOOM! 💥
+                  </div>
+                )}
               </div>
             </div>
           )}
