@@ -15,6 +15,9 @@ import BossBattle from './BossBattle';
 import SkinCreator from './SkinCreator';
 import SeasonalEvents from './SeasonalEvents';
 import ZombieSurvival from './ZombieSurvival';
+import AboutUs from './AboutUs';
+import PrivacyPolicy from './PrivacyPolicy';
+import TermsAndConditions from './TermsAndConditions';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
 
@@ -39,6 +42,9 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
   const [showSkinCreator, setShowSkinCreator] = useState(false);
   const [showSeasonalEvents, setShowSeasonalEvents] = useState(false);
   const [showZombieMode, setShowZombieMode] = useState(false);
+  const [showAboutUs, setShowAboutUs] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [player, setPlayer] = useState(storage.getPlayer());
 
@@ -369,6 +375,13 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <a href="https://github.com/pallavi081" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-gray-400 hover:text-white text-sm">
               <Github size={16} /> GitHub
             </a>
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 pt-4 border-t border-gray-700/50 mt-4">
+              <button onClick={() => setShowAboutUs(true)} className="text-gray-500 hover:text-white text-xs transition-colors">About Us</button>
+              <span className="text-gray-700 text-xs hidden sm:inline">•</span>
+              <button onClick={() => setShowTerms(true)} className="text-gray-500 hover:text-white text-xs transition-colors">Terms</button>
+              <span className="text-gray-700 text-xs hidden sm:inline">•</span>
+              <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-white text-xs transition-colors">Privacy Policy</button>
+            </div>
           </div>
 
           {/* Desktop Footer */}
@@ -378,9 +391,12 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
                 <Code size={16} className="text-purple-400" /> Developer
               </h4>
               <p className="text-gray-400 mb-2">Pallavi Kumari</p>
-              <a href="https://github.com/pallavi081" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors">
+              <a href="https://github.com/pallavi081" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors mb-2">
                 <Github size={16} /> github.com/pallavi081
               </a>
+              <div className="flex flex-col gap-1">
+                <button onClick={() => setShowAboutUs(true)} className="text-gray-500 hover:text-blue-400 text-xs text-left">About the Developer</button>
+              </div>
             </div>
 
             <div>
@@ -402,6 +418,10 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
                 <span className="px-2 py-1 bg-gray-700 rounded text-xs text-yellow-400">Vite</span>
                 <span className="px-2 py-1 bg-gray-700 rounded text-xs text-green-400">PWA</span>
               </div>
+              <div className="flex gap-4 mt-4 text-xs">
+                <button onClick={() => setShowTerms(true)} className="text-gray-500 hover:text-white transition-colors">Terms</button>
+                <button onClick={() => setShowPrivacy(true)} className="text-gray-500 hover:text-white transition-colors">Privacy</button>
+              </div>
             </div>
           </div>
 
@@ -412,80 +432,140 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
       </footer>
 
       {/* Modals */}
-      {showHowToPlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="bg-gray-800 p-6 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-700 relative">
-            <button onClick={() => setShowHowToPlay(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
-              <X size={24} />
-            </button>
-            <GameInstructions />
+      {
+        showHowToPlay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+            <div className="bg-gray-800 p-6 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-700 relative">
+              <button onClick={() => setShowHowToPlay(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <X size={24} />
+              </button>
+              <GameInstructions />
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
       {showShop && <Shop onClose={() => { setShowShop(false); refreshPlayer(); }} onPurchase={refreshPlayer} />}
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showDailyChallenges && <DailyChallenges onClose={() => setShowDailyChallenges(false)} />}
       {showSettings && <Settings onClose={() => setShowSettings(false)} onImport={refreshPlayer} />}
-      {showTournaments && (
-        <Tournaments
-          onClose={() => setShowTournaments(false)}
-          userId={user?.uid}
-          userName={user?.displayName || undefined}
-          userPhoto={user?.photoURL || undefined}
-        />
-      )}
-      {showFriends && (
-        <Friends
-          onClose={() => setShowFriends(false)}
-          userId={user?.uid}
-          userName={user?.displayName || undefined}
-          userPhoto={user?.photoURL || undefined}
-        />
-      )}
-      {showChat && (
-        <GlobalChat
-          onClose={() => setShowChat(false)}
-          userId={user?.uid}
-          userName={user?.displayName || undefined}
-          userPhoto={user?.photoURL || undefined}
-        />
-      )}
-      {showProfile && (
-        <PlayerProfile
-          onClose={() => setShowProfile(false)}
-          userId={user?.uid}
-          userName={user?.displayName || undefined}
-          userPhoto={user?.photoURL || undefined}
-        />
-      )}
-      {showDailyRewards && (
-        <DailyRewards
-          onClose={() => setShowDailyRewards(false)}
-          onClaim={refreshPlayer}
-        />
-      )}
-      {showBossBattle && (
-        <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
-          <BossBattle onBack={() => setShowBossBattle(false)} />
-        </div>
-      )}
-      {showSkinCreator && (
-        <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
-          <SkinCreator onBack={() => setShowSkinCreator(false)} />
-        </div>
-      )}
-      {showSeasonalEvents && (
-        <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto border-t border-gray-800">
-          <SeasonalEvents onBack={() => setShowSeasonalEvents(false)} />
-        </div>
-      )}
-      {showZombieMode && (
-        <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
-          <ZombieSurvival onBack={() => setShowZombieMode(false)} />
-        </div>
-      )}
+      {
+        showTournaments && (
+          <Tournaments
+            onClose={() => setShowTournaments(false)}
+            userId={user?.uid}
+            userName={user?.displayName || undefined}
+            userPhoto={user?.photoURL || undefined}
+          />
+        )
+      }
+      {
+        showFriends && (
+          <Friends
+            onClose={() => setShowFriends(false)}
+            userId={user?.uid}
+            userName={user?.displayName || undefined}
+            userPhoto={user?.photoURL || undefined}
+          />
+        )
+      }
+      {
+        showChat && (
+          <GlobalChat
+            onClose={() => setShowChat(false)}
+            userId={user?.uid}
+            userName={user?.displayName || undefined}
+            userPhoto={user?.photoURL || undefined}
+          />
+        )
+      }
+      {
+        showProfile && (
+          <PlayerProfile
+            onClose={() => setShowProfile(false)}
+            userId={user?.uid}
+            userName={user?.displayName || undefined}
+            userPhoto={user?.photoURL || undefined}
+          />
+        )
+      }
+      {
+        showDailyRewards && (
+          <DailyRewards
+            onClose={() => setShowDailyRewards(false)}
+            onClaim={refreshPlayer}
+          />
+        )
+      }
+      {
+        showBossBattle && (
+          <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
+            <BossBattle onBack={() => setShowBossBattle(false)} />
+          </div>
+        )
+      }
+      {
+        showSkinCreator && (
+          <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto">
+            <SkinCreator onBack={() => setShowSkinCreator(false)} />
+          </div>
+        )
+      }
+      {
+        showSeasonalEvents && (
+          <div className="fixed inset-0 z-50 bg-gray-900 overflow-y-auto border-t border-gray-800">
+            <SeasonalEvents onBack={() => setShowSeasonalEvents(false)} />
+          </div>
+        )
+      }
+      {
+        showZombieMode && (
+          <div className="fixed inset-0 z-50 bg-black overflow-y-auto">
+            <ZombieSurvival onBack={() => setShowZombieMode(false)} />
+          </div>
+        )
+      }
+
+      {/* Legal Modals */}
+      {
+        showAboutUs && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
+            <div className="bg-gray-800 p-6 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto border border-gray-700 relative shadow-2xl">
+              <button onClick={() => setShowAboutUs(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/50 p-1 rounded-lg">
+                <X size={20} />
+              </button>
+              <AboutUs />
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showPrivacy && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
+            <div className="bg-gray-800 p-6 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto border border-gray-700 relative shadow-2xl">
+              <button onClick={() => setShowPrivacy(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/50 p-1 rounded-lg">
+                <X size={20} />
+              </button>
+              <PrivacyPolicy />
+            </div>
+          </div>
+        )
+      }
+
+      {
+        showTerms && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm">
+            <div className="bg-gray-800 p-6 rounded-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto border border-gray-700 relative shadow-2xl">
+              <button onClick={() => setShowTerms(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white bg-gray-700/50 p-1 rounded-lg">
+                <X size={20} />
+              </button>
+              <TermsAndConditions />
+            </div>
+          </div>
+        )
+      }
     </div>
   );
 };

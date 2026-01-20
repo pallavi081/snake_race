@@ -249,7 +249,6 @@ export const getAvailablePublicRooms = async (): Promise<any[]> => {
         const q = query(
             roomsRef,
             where('status', '==', 'waiting'),
-            orderBy('lastUpdated', 'desc'),
             limit(10)
         );
         const snap = await getDocs(q);
