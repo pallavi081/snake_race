@@ -207,6 +207,30 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
         </div>
       </div>
 
+      {/* Sign-in Reminder for Guests */}
+      {!isAuthenticated && (
+        <div className="bg-indigo-600/20 border-y border-indigo-500/30 w-full animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-500 p-2 rounded-lg hidden sm:block">
+                <LogIn size={18} className="text-white" />
+              </div>
+              <p className="text-sm font-medium text-indigo-100 italic">
+                Guest Mode: <span className="text-white font-bold not-italic">Sign in</span> to save your coins, level-ups, and battle stats!
+              </p>
+            </div>
+            <button
+              onClick={signInWithGoogle}
+              disabled={authLoading}
+              className="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-full text-xs font-bold transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-95 whitespace-nowrap"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" className="w-3 h-3 invert" />
+              Sign in Now
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="text-center mb-8 md:mb-12">
