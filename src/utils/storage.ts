@@ -23,6 +23,8 @@ export interface PlayerData {
     selectedTheme: string;
     unlockedSkins: string[];
     unlockedThemes: string[];
+    eventProgress?: Record<string, number>;
+    unlockedBosses?: string[];
 }
 
 // Game Settings
@@ -152,7 +154,8 @@ export const storage = {
 
     saveAchievement: (id: string, progress: Partial<AchievementProgress>) => {
         const achievements = storage.getAchievements();
-        achievements[id] = { unlocked: false, progress: 0, ...achievements[id], ...progress, id };
+        const current = achievements[id] || { unlocked: false, progress: 0, id };
+        achievements[id] = { ...current, ...progress, id };
         localStorage.setItem(STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(achievements));
     },
 

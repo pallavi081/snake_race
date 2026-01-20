@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Gift, Clock, Star, Sparkles, Trophy } from 'lucide-react';
 import storage from '../utils/storage';
+import { getGlobalSettings } from '../utils/cloudStorage';
 
 interface SeasonalEventsProps {
     onBack: () => void;
@@ -148,16 +149,58 @@ const getDaysRemaining = (event: SeasonalEvent): number => {
 const SeasonalEvents: React.FC<SeasonalEventsProps> = ({ onBack }) => {
     const [selectedEvent, setSelectedEvent] = useState<SeasonalEvent | null>(null);
     const [eventProgress, setEventProgress] = useState<Record<string, number>>({});
+    const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+    const [globalSettings, setGlobalSettings] = useState<any>(null);
 
     useEffect(() => {
+        const loadRemoteData = async () => {
+            const settings = await getGlobalSettings();
+            setGlobalSettings(settings); // Store full settings object
+            if (settings.eventOverrides) {
+                setOverrides(settings.eventOverrides);
+            }
+        };
+        loadRemoteData();
+
         const player = storage.getPlayer();
         if (player.eventProgress) {
             setEventProgress(player.eventProgress);
         }
     }, []);
 
-    const activeEvents = SEASONAL_EVENTS.filter(isEventActive);
-    const upcomingEvents = SEASONAL_EVENTS.filter(e => !isEventActive(e));
+    const isEffectiveActive = (event: SeasonalEvent) => {
+        // 1. Check direct override (Active/Blocked)
+        const override = overrides[event.id];
+        if (override === true) return true;
+        if (override === false) return false;
+
+        // 2. Check custom date range
+        const customDates = globalSettings?.eventDates?.[event.id];
+        if (customDates?.startDate && customDates?.endDate) {
+            const now = new Date();
+            const start = new Date(customDates.startDate);
+            const end = new Date(customDates.endDate);
+            return now >= start && now <= end;
+        }
+
+        // 3. Fallback to default logic
+        return isEventActive(event);
+    };
+
+    const getRemainingDaysLocal = (event: SeasonalEvent) => {
+        const customDates = globalSettings?.eventDates?.[event.id];
+        if (customDates?.endDate) {
+            const now = new Date();
+            const end = new Date(customDates.endDate);
+            const diff = end.getTime() - now.getTime();
+            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            return days > 0 ? days : 0;
+        }
+        return getDaysRemaining(event);
+    };
+
+    const activeEvents = SEASONAL_EVENTS.filter(isEffectiveActive);
+    const upcomingEvents = SEASONAL_EVENTS.filter(e => !isEffectiveActive(e));
 
     const handleClaimReward = (eventId: string, challengeId: string, reward: number) => {
         const key = `${eventId}_${challengeId}_claimed`;
@@ -189,12 +232,12 @@ const SeasonalEvents: React.FC<SeasonalEventsProps> = ({ onBack }) => {
                     </div>
 
                     {/* Time Remaining */}
-                    {isEventActive(selectedEvent) && (
+                    {isEffectiveActive(selectedEvent) && (
                         <div className="bg-gray-800/80 rounded-xl p-4 mb-4 flex items-center gap-3">
                             <Clock className="text-yellow-400" />
                             <div>
                                 <div className="text-sm text-gray-400">Event ends in</div>
-                                <div className="text-xl font-bold text-yellow-400">{getDaysRemaining(selectedEvent)} days</div>
+                                <div className="text-xl font-bold text-yellow-400">{getRemainingDaysLocal(selectedEvent)} days</div>
                             </div>
                         </div>
                     )}
@@ -309,7 +352,7 @@ const SeasonalEvents: React.FC<SeasonalEventsProps> = ({ onBack }) => {
                                             <p className="text-sm text-gray-300">{event.description}</p>
                                             <div className="flex items-center gap-2 mt-2 text-xs">
                                                 <Clock size={12} className="text-yellow-400" />
-                                                <span className="text-yellow-400">{getDaysRemaining(event)} days remaining</span>
+                                                <span className="text-yellow-400">{getRemainingDaysLocal(event)} days remaining</span>
                                             </div>
                                         </div>
                                         <div className="text-right">

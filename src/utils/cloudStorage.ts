@@ -172,3 +172,84 @@ export const loadPuzzleProgress = async (userId: string): Promise<{ currentLevel
         return null;
     }
 };
+
+// --- Admin Methods ---
+
+// Get global settings (e.g., event overrides)
+export const getGlobalSettings = async (): Promise<any> => {
+    try {
+        const settingsRef = doc(db, 'settings', 'global');
+        const snap = await getDoc(settingsRef);
+        return snap.exists() ? snap.data() : {};
+    } catch (error) {
+        console.error('❌ Failed to get global settings:', error);
+        return {};
+    }
+};
+
+// Update global settings
+export const updateGlobalSettings = async (settings: any): Promise<void> => {
+    try {
+        const settingsRef = doc(db, 'settings', 'global');
+        await setDoc(settingsRef, {
+            ...settings,
+            lastUpdated: serverTimestamp()
+        }, { merge: true });
+        console.log('✅ Global settings updated');
+    } catch (error) {
+        console.error('❌ Failed to update global settings:', error);
+        throw error;
+    }
+};
+
+// Get all users (for admin management)
+export const getAllUsers = async (limitCount: number = 20): Promise<any[]> => {
+    try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, orderBy('lastUpdated', 'desc'), limit(limitCount));
+        const snap = await getDocs(q);
+        return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+        console.error('❌ Failed to fetch users:', error);
+        return [];
+    }
+};
+
+// Delete a leaderboard entry
+export const deleteLeaderboardEntry = async (entryId: string): Promise<void> => {
+    try {
+        const entryRef = doc(db, 'leaderboard', entryId);
+        await setDoc(entryRef, { deleted: true }, { merge: true }); // Soft delete
+        // Or hard delete:
+        // await deleteDoc(entryRef);
+        console.log('✅ Leaderboard entry deleted');
+    } catch (error) {
+        console.error('❌ Failed to delete leaderboard entry:', error);
+        throw error;
+    }
+};
+
+// Get system stats
+export const getSystemStats = async (): Promise<any> => {
+    try {
+        console.log('[cloudStorage] Fetching system stats...');
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const leaderboardSnap = await getDocs(collection(db, 'leaderboard'));
+        // ... (rest of function)
+
+        let totalCoins = 0;
+        usersSnap.forEach(u => {
+            totalCoins += u.data().playerData?.coins || 0;
+        });
+
+        return {
+            totalUsers: usersSnap.size,
+            totalLeaderboardEntries: leaderboardSnap.size,
+            totalCoinsInCirculation: totalCoins,
+            lastUpdated: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('❌ Failed to get system stats:', error);
+        return { totalUsers: 0, totalLeaderboardEntries: 0, totalCoinsInCirculation: 0 };
+    }
+};
