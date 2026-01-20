@@ -34,6 +34,7 @@ export interface Settings {
   bgColor: string;
   gridColor: string;
   borderColor: string;
+  selectedSkin?: string;
 }
 
 export interface GameState {

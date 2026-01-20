@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { GameState, PowerUpType } from '../types/game.ts';
 import { GRID_SIZE } from '../utils/gameLogic.ts';
+import { getSkinById } from '../data/skins';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -80,16 +81,31 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }
     });
 
     // Draw snake
+    const skinData = settings.selectedSkin ? getSkinById(settings.selectedSkin) : null;
+    const snakeHeadColor = settings.snakeHeadColor;
+    const snakeBodyColor = settings.snakeBodyColor;
+
     gameState.snake.forEach((segment, index) => {
       if (index === 0) {
         // Snake head
-        ctx.fillStyle = settings.snakeHeadColor;
-        ctx.shadowColor = settings.snakeHeadColor;
-        ctx.shadowBlur = 10;
+        ctx.fillStyle = snakeHeadColor;
+        ctx.shadowColor = snakeHeadColor;
+        ctx.shadowBlur = skinData?.pattern === 'glow' ? 25 : 15;
       } else {
         // Snake body
-        ctx.fillStyle = settings.snakeBodyColor;
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = skinData?.pattern === 'glow' ? 10 : 0;
+      }
+
+      // Apply Gradient if exists
+      if (skinData?.gradient) {
+        const grad = ctx.createLinearGradient(
+          segment.x * GRID_SIZE, segment.y * GRID_SIZE,
+          (segment.x + 1) * GRID_SIZE, (segment.y + 1) * GRID_SIZE
+        );
+        skinData.gradient.forEach((c, i) => grad.addColorStop(i / (skinData.gradient!.length - 1), c));
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = index === 0 ? snakeHeadColor : snakeBodyColor;
       }
 
       ctx.fillRect(
@@ -98,6 +114,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onStart, onRestart }
         GRID_SIZE - 2,
         GRID_SIZE - 2
       );
+
+      // Pattern overlays
+      if (skinData?.pattern === 'striped' && index > 0 && index % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(
+          segment.x * GRID_SIZE + 1,
+          segment.y * GRID_SIZE + 1,
+          GRID_SIZE - 2,
+          GRID_SIZE - 2
+        );
+      }
     });
 
     // Draw food

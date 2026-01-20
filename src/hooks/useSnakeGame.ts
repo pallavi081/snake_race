@@ -53,6 +53,7 @@ const getInitialSettings = (): Settings => {
     bgColor: theme.bgColor,
     gridColor: theme.gridColor,
     borderColor: theme.borderColor,
+    selectedSkin: player.selectedSkin
   };
 };
 

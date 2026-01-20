@@ -33,5 +33,47 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read, write: if isAdmin();
     }
+
+    // Public Rooms for Battle Royale
+    match /public_rooms/{roomId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Tournaments
+    match /tournaments/{weekId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      match /entries/{userId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Friends & Codes
+    match /friendCodes/{code} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Global Chat
+    match /chat/{msgId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
+    }
+
+    // Player Profiles
+    match /profiles/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Analytics
+    match /analytics/{docId} {
+      allow read: if isAdmin();
+      allow write: if request.auth != null;
+    }
   }
 }

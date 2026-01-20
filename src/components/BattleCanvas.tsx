@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Video, StopCircle, Download } from 'lucide-react';
 import { BattleGameState, PowerUpType } from './useBattleGame';
-import { Theme } from '../data/skins';
+import { Theme, getSkinById } from '../data/skins';
 
 interface BattleCanvasProps {
   gameState: BattleGameState;
@@ -259,19 +259,43 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
       }
 
       // --- Snake Body ---
-      ctx.fillStyle = snake.color;
+      const skinData = snake.selectedSkin ? getSkinById(snake.selectedSkin) : null;
+      const snakeColor = skinData ? skinData.color : snake.color;
+
+      ctx.save();
       snake.body.forEach((seg, idx) => {
         if (idx === 0) {
-          ctx.shadowColor = snake.color;
-          ctx.shadowBlur = 10;
+          ctx.shadowColor = snakeColor;
+          ctx.shadowBlur = 15;
+          if (skinData?.pattern === 'glow') ctx.shadowBlur = 25;
         } else {
-          ctx.shadowBlur = 0;
+          ctx.shadowBlur = skinData?.pattern === 'glow' ? 10 : 0;
         }
+
+        // Apply Gradient if exists
+        if (skinData?.gradient) {
+          const grad = ctx.createLinearGradient(
+            seg.x * gridSize, seg.y * gridSize,
+            (seg.x + 1) * gridSize, (seg.y + 1) * gridSize
+          );
+          skinData.gradient.forEach((c, i) => grad.addColorStop(i / (skinData.gradient!.length - 1), c));
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = snakeColor;
+        }
+
         const radius = idx === 0 ? gridSize / 2 : gridSize / 2 - 2;
         ctx.beginPath();
         ctx.arc(seg.x * gridSize + gridSize / 2, seg.y * gridSize + gridSize / 2, radius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Pattern overlays
+        if (skinData?.pattern === 'striped' && idx % 2 === 0) {
+          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+          ctx.fill();
+        }
       });
+      ctx.restore();
 
       // --- Hat Rendering ---
       if (snake.selectedHat && snake.selectedHat !== 'none') {

@@ -28,6 +28,7 @@ export interface Snake {
   isNovaActive: boolean;
   selectedHat?: string;
   selectedTrail?: string;
+  selectedSkin?: string;
 }
 
 export type PowerUpType = 'speed' | 'shield' | 'doubleXp' | 'magnet' | 'bomb';
@@ -163,7 +164,7 @@ export const useBattleGame = () => {
       case 'JOIN':
         // New player joined (host only)
         if (isHostRef.current) {
-          const { name, color, peerId, selectedHat, selectedTrail } = message.payload;
+          const { name, color, peerId, selectedHat, selectedTrail, selectedSkin } = message.payload;
           const startPos = generateRandomPosition();
           const newSnake: Snake = {
             id: peerId,
@@ -185,7 +186,8 @@ export const useBattleGame = () => {
             novaMeter: 0,
             isNovaActive: false,
             selectedHat,
-            selectedTrail
+            selectedTrail,
+            selectedSkin
           };
 
           setGameState(prev => {
@@ -276,7 +278,7 @@ export const useBattleGame = () => {
   }, [handleMessage, broadcast]);
 
   // Create room (become host)
-  const createRoom = useCallback((playerName: string, playerColor: string, isPrivate: boolean = false, selectedHat?: string, selectedTrail?: string) => {
+  const createRoom = useCallback((playerName: string, playerColor: string, isPrivate: boolean = false, selectedHat?: string, selectedTrail?: string, selectedSkin?: string) => {
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const myId = `host-${roomId}`;
     isHostRef.current = true;
@@ -321,7 +323,8 @@ export const useBattleGame = () => {
         novaMeter: 0,
         isNovaActive: false,
         selectedHat,
-        selectedTrail
+        selectedTrail,
+        selectedSkin
       };
 
       setGameState(prev => ({
@@ -332,6 +335,7 @@ export const useBattleGame = () => {
         waitingForPlayers: true,
         isPrivate,
         isConnected: true,
+        connectionStatus: 'connected',
         gameTime: 0
       }));
 
@@ -355,7 +359,7 @@ export const useBattleGame = () => {
   }, [setupConnection, broadcast]);
 
   // Join room
-  const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string, selectedHat?: string, selectedTrail?: string) => {
+  const joinRoom = useCallback((playerName: string, playerColor: string, roomId: string, selectedHat?: string, selectedTrail?: string, selectedSkin?: string) => {
     const myId = `player-${Date.now()}`;
     isHostRef.current = false;
     myIdRef.current = myId;
@@ -388,7 +392,7 @@ export const useBattleGame = () => {
         // Send join message
         const joinMsg = {
           type: 'JOIN',
-          payload: { name: playerName, color: playerColor, peerId: myId, selectedHat, selectedTrail },
+          payload: { name: playerName, color: playerColor, peerId: myId, selectedHat, selectedTrail, selectedSkin },
           senderId: myId
         };
         console.log('📤 Sending JOIN:', joinMsg);
@@ -426,7 +430,7 @@ export const useBattleGame = () => {
   }, [handleMessage]);
 
   // Find and join a public quick match room
-  const findQuickMatch = useCallback(async (playerName: string, playerColor: string, selectedHat?: string, selectedTrail?: string) => {
+  const findQuickMatch = useCallback(async (playerName: string, playerColor: string, selectedHat?: string, selectedTrail?: string, selectedSkin?: string) => {
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
 
     const availableRooms = await getAvailablePublicRooms();
@@ -434,10 +438,10 @@ export const useBattleGame = () => {
     if (availableRooms.length > 0) {
       // Join the first available room
       const room = availableRooms[0];
-      joinRoom(playerName, playerColor, room.roomId, selectedHat, selectedTrail);
+      joinRoom(playerName, playerColor, room.roomId, selectedHat, selectedTrail, selectedSkin);
     } else {
       // Create a new public room if none found
-      createRoom(playerName, playerColor, false, selectedHat, selectedTrail);
+      createRoom(playerName, playerColor, false, selectedHat, selectedTrail, selectedSkin);
     }
   }, [joinRoom, createRoom]);
 

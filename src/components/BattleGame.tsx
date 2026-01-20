@@ -15,7 +15,7 @@ interface BattleGameProps {
 }
 
 const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
-  const { gameState, changeDirection, createRoom, joinRoom, findQuickMatch, activateNovaMode, startGame, resetGame, getXpForNextLevel, unlockedAchievements, clearAchievements } = useBattleGame();
+  const { gameState, changeDirection, createRoom, joinRoom, findQuickMatch, activateNovaMode, startGame, resetGame, unlockedAchievements, clearAchievements } = useBattleGame();
   const [playerName, setPlayerName] = useState('');
   const [selectedColor, setSelectedColor] = useState(SNAKE_COLORS[0].color);
   const [inputRoomId, setInputRoomId] = useState('');
@@ -105,7 +105,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
     // If we have a room to join from URL, skip menu and join directly
     if (joiningRoomId) {
       const p = storage.getPlayer();
-      joinRoom(playerName, selectedColor, joiningRoomId, p.selectedHat, p.selectedTrail);
+      joinRoom(playerName, selectedColor, joiningRoomId, p.selectedHat, p.selectedTrail, p.selectedSkin);
       setMode('lobby');
       // Clear URL param after joining
       window.history.replaceState({}, '', window.location.pathname);
@@ -116,7 +116,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
 
   const handleCreateRoom = () => {
     const p = storage.getPlayer();
-    createRoom(playerName, selectedColor, isPrivate, p.selectedHat, p.selectedTrail);
+    createRoom(playerName, selectedColor, isPrivate, p.selectedHat, p.selectedTrail, p.selectedSkin);
     setMode('lobby');
   };
 
@@ -126,7 +126,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
       return;
     }
     const p = storage.getPlayer();
-    findQuickMatch(playerName, selectedColor, p.selectedHat, p.selectedTrail);
+    findQuickMatch(playerName, selectedColor, p.selectedHat, p.selectedTrail, p.selectedSkin);
     setMode('lobby');
   };
   const handleJoinRoom = () => {
@@ -135,7 +135,7 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
       return;
     }
     const p = storage.getPlayer();
-    joinRoom(playerName, selectedColor, inputRoomId.toUpperCase(), p.selectedHat, p.selectedTrail);
+    joinRoom(playerName, selectedColor, inputRoomId.toUpperCase(), p.selectedHat, p.selectedTrail, p.selectedSkin);
     setMode('lobby');
   };
 
