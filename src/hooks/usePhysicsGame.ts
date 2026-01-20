@@ -10,7 +10,7 @@ const MOVE_SPEED = 5;
 const JUMP_FORCE = -12;
 const TILE_SIZE = 20;
 
-interface PhysicsGameState {
+export interface PhysicsGameState {
   currentLevelIndex: number;
   level: PhysicsLevel;
   snake: { pos: Position, vel: { x: number, y: number } };
@@ -171,12 +171,31 @@ export const usePhysicsGame = () => {
         isLevelFailed: isFailed
       };
     });
-  }, []);
+  }, [playSound]);
 
   useEffect(() => {
     const loop = setInterval(gameLoop, 1000 / 60); // 60 FPS
     return () => clearInterval(loop);
   }, [gameLoop]);
+
+  const goToLevel = useCallback((levelIndex: number) => {
+    if (levelIndex >= 0 && levelIndex < physicsLevels.length) {
+      setCurrentLevelIndex(levelIndex);
+      setGameState(() => {
+        const level = physicsLevels[levelIndex];
+        return {
+          currentLevelIndex: levelIndex,
+          level,
+          snake: { pos: { x: level.initialSnake[0].x * TILE_SIZE, y: level.initialSnake[0].y * TILE_SIZE }, vel: { x: 0, y: 0 } },
+          food: level.foodPositions.map(p => ({ x: p.x * TILE_SIZE, y: p.y * TILE_SIZE })),
+          isLevelComplete: false,
+          isLevelFailed: false,
+          canJump: false,
+          gameStarted: false
+        };
+      });
+    }
+  }, []);
 
   const loadCustomLevel = useCallback((level: PhysicsLevel) => {
     setGameState({
@@ -198,6 +217,7 @@ export const usePhysicsGame = () => {
     jump,
     startGame,
     loadCustomLevel,
+    goToLevel,
     resetLevel: () => setGameState(prev => {
       const level = prev.level;
       return {

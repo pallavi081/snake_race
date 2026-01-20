@@ -65,7 +65,7 @@ const PuzzleCanvas: React.FC<PuzzleCanvasProps> = ({ level, snake, food }) => {
       ref={canvasRef}
       width={canvasSize}
       height={canvasSize}
-      className="border-2 border-gray-600 rounded-lg"
+      className="border-2 border-gray-600 rounded-lg max-w-full h-auto shadow-2xl"
     />
   );
 };

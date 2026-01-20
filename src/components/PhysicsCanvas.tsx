@@ -24,15 +24,15 @@ const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({ gameState }) => {
     ctx.fillRect(0, 0, canvasSize, canvasSize);
 
     // Draw tiles
-    level.tiles.forEach((row, y) => {
-      row.forEach((tile, x) => {
+    level.tiles.forEach((row: any[], y: number) => {
+      row.forEach((tile: any, x: number) => {
         if (tile.type === TileType.Platform) {
           ctx.fillStyle = '#888';
           ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
         }
       });
     });
-    
+
     // Draw snake
     ctx.fillStyle = '#4ade80';
     ctx.fillRect(snake.pos.x, snake.pos.y, gridSize, gridSize);
@@ -44,7 +44,7 @@ const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({ gameState }) => {
       ref={canvasRef}
       width={canvasSize}
       height={canvasSize}
-      className="border-2 border-gray-600 rounded-lg"
+      className="border-2 border-gray-600 rounded-lg max-w-full h-auto shadow-2xl"
     />
   );
 };

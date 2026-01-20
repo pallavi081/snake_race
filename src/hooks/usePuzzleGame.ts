@@ -139,14 +139,13 @@ export const usePuzzleGame = () => {
     });
   }, [currentLevelIndex]);
 
-  const goToNextLevel = useCallback(() => {
-    const nextLevelIndex = currentLevelIndex + 1;
-    if (nextLevelIndex < puzzleLevels.length) {
-      setCurrentLevelIndex(nextLevelIndex);
+  const goToLevel = useCallback((levelIndex: number) => {
+    if (levelIndex >= 0 && levelIndex < puzzleLevels.length) {
+      setCurrentLevelIndex(levelIndex);
       setGameState(() => {
-        const level = puzzleLevels[nextLevelIndex];
+        const level = puzzleLevels[levelIndex];
         return {
-          currentLevelIndex: nextLevelIndex,
+          currentLevelIndex: levelIndex,
           level,
           snake: level.initialSnake,
           food: [...level.foodPositions],
@@ -157,11 +156,18 @@ export const usePuzzleGame = () => {
           history: [],
         };
       });
+    }
+  }, []);
+
+  const goToNextLevel = useCallback(() => {
+    const nextLevelIndex = currentLevelIndex + 1;
+    if (nextLevelIndex < puzzleLevels.length) {
+      goToLevel(nextLevelIndex);
     } else {
       // All levels complete
       setGameState(prev => ({ ...prev, isLevelComplete: true }));
     }
-  }, [currentLevelIndex]);
+  }, [currentLevelIndex, goToLevel]);
 
   const loadCustomLevel = useCallback((level: PuzzleLevel) => {
     setGameState({
@@ -198,6 +204,7 @@ export const usePuzzleGame = () => {
     moveSnakeAndCheck,
     restartLevel,
     goToNextLevel,
+    goToLevel,
     undo,
     loadCustomLevel,
   };
