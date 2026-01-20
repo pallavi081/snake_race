@@ -1,77 +1,73 @@
-# Responsive Retro & Battle Royale Snake Game
+# 🐍 Snake Race: Global Battle Royale
 
-A modern, feature-rich Snake game built with React, TypeScript, and Vite. It combines classic gameplay with a high-octane **Battle Royale mode**, RPG-like progression, and a full economic system.
+A modern, high-performance Snake game built with **React**, **TypeScript**, and **Vite**. Features a high-octane **Battle Royale mode** with real-time P2P multiplayer, RPG-like progression, and an explosive "Nova Blast" mechanic.
 
 ## 🚀 Key Features
 
+### 🌐 Real-time Multiplayer
+- **Global Arena**: Use **"Quick Play"** to join global public rooms instantly.
+- **P2P Networking**: Powered by **PeerJS** for low-latency peer-to-peer gameplay.
+- **Private Rooms**: Create custom lobbies and share invite links with friends.
+
+### 🔥 Nova Mode (Boom Blaster)
+- **Rage Meter**: Fill your Nova meter by eating food and getting kills.
+- **Nova Blast**: Once fully charged, press **Space** to trigger a massive shockwave.
+- **Golden Gems**: Blasted snakes turn into high-value gems for massive XP gains.
+
 ### 🎮 Game Modes
-1.  **Classic Mode:** The timeless experience. Eat food, grow, and avoid walls.
-2.  **Battle Royale:** Enter a massive persistent arena with smart bots.
-    *   **Combat:** Cut off other snakes to kill them.
-    *   **Progression:** Collect XP orbs to level up and increase size.
-    *   **Power-Ups:** Shield, Magnet, Speed Boost, and Double XP.
-3.  **Boss Battles:** 🐉 Defeat 5 unique kings (Viper King, Void Cobra, etc.) with special abilities and progression.
-4.  **Zombie Survival:** 🧟 Survive waves of undead snakes, collect cures, and watch your hearts!
-5.  **Seasonal Events:** 🎪 Holiday themes (Diwali, Christmas, etc.) with exclusive time-limited rewards.
-6.  **Custom Skin Creator:** 🎨 Design your own snake with colors, patterns, and accessories.
-7.  **Puzzle Mode:** specialized challenges with move limits and undo functionality.
-8.  **Physics Mode:** Gravity, jumping, and platforms platformer-style mechanics.
-9.  **Creative Mode (Level Editor):** 🏗️ Design your own custom maps, save and play them!
+1.  **Battle Royale:** Multiplayer arena with smart bots and real players.
+2.  **Classic Mode:** The timeless survival experience.
+3.  **Boss Battles:** 🐉 Defeat unique kings with specialized abilities.
+4.  **Zombie Survival:** 🧟 Survive waves of undead snakes.
+5.  **Puzzle & Physics:** Move-limited challenges and platformer mechanics.
+6.  **Creative Mode:** 🏗️ Built-in Level Editor to design and share maps.
 
-### 🏆 Progression & Economy
-*   **Global Leaderboard:** Track high scores locally and compete globally.
-*   **Shop & Creator:** Earn coins to unlock skins or craft your own unique look.
-*   **Daily Challenges:** 3 new quests every day to earn rewards and build streaks.
-*   **Achievements:** Over 50 unlockable rewards with toast notifications.
-*   **Data Sync & Settings:** 💾 Export/Import data and control Sound/Vibration.
+### 🏆 Economy & Auth
+- **Google Sign-In**: Securely save your coins, level, and stats to the cloud.
+- **Shop & Creator**: Unlock premium skins or design your own pattern.
+- **Daily Rewards**: Building streaks and completing 3 daily quests.
+- **Leaderboard**: Global real-time rankings powered by Firebase.
 
-### 🎥 Advanced Features
-*   **Battle Recording:** Record your gameplay in Battle Royale and download the replay video.
-*   **PWA Support:** Installable as a native app on iOS and Android.
-*   **Touch Controls:** Optimized swipe gestures for smooth movement.
-*   **Responsive UI:** all menus, modals, and game canvases scale perfectly to phone screens.
+## 🛠️ Tech Stack
+-   **Core:** React 18, TypeScript, Vite
+-   **Multiplayer:** PeerJS (WebRTC)
+-   **Backend:** Firebase Firestore (Cloud Sync & Global Rooms)
+-   **Graphics:** HTML5 Canvas API
+-   **Audio:** Web Audio API (Synthesized SFX)
+-   **Styling:** Tailwind CSS + Lucide Icons
 
-## 🛠️ Technologies Used
--   **Frontend:** React 18, TypeScript, Vite
--   **Styling:** Tailwind CSS, Lucide React (Icons)
--   **State/Storage:** LocalStorage (Persistence), Custom Hooks
--   **Audio:** Web Audio API (Synthesized sound effects)
-
-## 📦 Installation
-1.  **Clone the repo**
-    ```sh
-    git clone https://github.com/your_username_/project_repo.git
-    cd snake_race-main
+## 📦 Installation & Setup
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/pallavi081/snake_race.git
+    cd snake_race
     ```
-2.  **Install dependencies**
-    ```sh
+2.  **Install Dependencies**
+    ```bash
     npm install
-    # Also install dev dependencies if needed
-    npm install -D vite @vitejs/plugin-react tailwindcss autoprefixer postcss
     ```
-3.  **Run Development Server**
-    ```sh
+3.  **Environment Setup**
+    Create a `.env` file with your Firebase and PeerJS configurations:
+    ```env
+    VITE_FIREBASE_API_KEY=your_key
+    VITE_FIREBASE_AUTH_DOMAIN=your_domain
+    VITE_FIREBASE_PROJECT_ID=your_id
+    VITE_FIREBASE_STORAGE_BUCKET=your_bucket
+    VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
+    VITE_FIREBASE_APP_ID=your_id
+    ```
+4.  **Run Development Server**
+    ```bash
     npm run dev
     ```
 
-## 🎮 How to Play
-
-### Controls
+## 🎮 Controls
 | Action | Desktop | Mobile |
 | :--- | :--- | :--- |
 | **Move** | Arrow Keys / WASD | Swipe |
-| **Boost** | Spacebar (Hold) | Double Tap (Hold) |
-| **Pause** | 'P' or ESC | Menu Button |
+| **Boost** | Hold Left Shift | Hold Screen |
+| **Nova Blast** | Spacebar | Tap Nova Button |
+| **Pause** | ESC | Menu Icon |
 
-### Battle Tips
-*   **Kill:** Boost in front of an opponent's head to make them crash into your body.
-*   **Survive:** Use Shields to protect yourself in crowded areas.
-*   **Grow:** Magnet power-ups are the fastest way to gather XP orbs.
-
-## 🔮 Future Roadmap
-- [ ] Online Multiplayer (WebSocket server)
-- [ ] Account Cloud Sync
-- [ ] Team Battle Mode
-
-## 👤 Developer
--   **Pallavi** - [https://github.com/pallavi081](https://github.com/pallavi081)
+## 👤 Credits
+Developed by **Pallavi Kumari** - [GitHub Profile](https://github.com/pallavi081)
