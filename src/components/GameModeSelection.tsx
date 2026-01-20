@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings } from 'lucide-react';
+import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings, LogIn, LogOut, User, Users, MessageCircle, Gift, Crown, MoreVertical } from 'lucide-react';
 import GameInstructions from './GameInstructions';
 import Leaderboard from './Leaderboard';
 import Shop from './Shop';
 import Achievements from './Achievements';
 import DailyChallenges from './DailyChallenges';
 import DataSync from './DataSync';
+import Tournaments from './Tournaments';
+import Friends from './Friends';
+import GlobalChat from './GlobalChat';
+import PlayerProfile from './PlayerProfile';
+import DailyRewards from './DailyRewards';
 import { storage } from '../utils/storage';
+import { useAuth } from '../hooks/useAuth';
 
 interface GameModeSelectionProps {
   onSelectMode: (mode: 'classic' | 'puzzle' | 'physics' | 'battle') => void;
@@ -19,8 +25,17 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
   const [showAchievements, setShowAchievements] = useState(false);
   const [showDailyChallenges, setShowDailyChallenges] = useState(false);
   const [showDataSync, setShowDataSync] = useState(false);
+  const [showTournaments, setShowTournaments] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [player, setPlayer] = useState(storage.getPlayer());
+
+  // Firebase Auth
+  const { user, loading: authLoading, signInWithGoogle, signOut, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -49,48 +64,119 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
   return (
     <div className="flex flex-col min-h-screen bg-gray-900 text-white">
       {/* Top Bar */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2">
+      <div className="bg-gray-800 border-b border-gray-700 px-3 py-2 relative">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-yellow-400 font-bold">🪙 {player.coins}</span>
-            <span className="text-orange-400 text-sm">🔥 {player.currentStreak} days</span>
-          </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDailyChallenges(true)}
-              className="p-2 bg-blue-600/20 hover:bg-blue-600/40 rounded-lg transition-all"
-              title="Daily Challenges"
-            >
+            {/* User Profile / Sign In */}
+            {isAuthenticated && user ? (
+              <button
+                onClick={() => setShowProfile(true)}
+                className="flex items-center gap-2 hover:bg-gray-700/50 rounded-lg px-2 py-1 transition-colors"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border-2 border-green-500" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center">
+                    <User size={14} />
+                  </div>
+                )}
+                <span className="text-xs text-gray-300 hidden sm:block max-w-[60px] truncate">{user.displayName?.split(' ')[0] || 'Player'}</span>
+              </button>
+            ) : (
+              <button
+                onClick={signInWithGoogle}
+                disabled={authLoading}
+                className="flex items-center gap-1.5 px-2 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition-all text-xs"
+                title="Sign in with Google"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" className="w-4 h-4" />
+                <span className="hidden sm:inline">Sign In</span>
+              </button>
+            )}
+            <button onClick={() => setShowDailyRewards(true)} className="text-yellow-400 font-bold hover:bg-yellow-600/20 px-2 py-1 rounded-lg transition-colors text-sm" title="Daily Rewards">
+              🪙 {player.coins}
+            </button>
+            <span className="text-orange-400 text-xs">🔥 {player.currentStreak}</span>
+          </div>
+
+          {/* Desktop: All Buttons Visible */}
+          <div className="hidden md:flex items-center gap-1">
+            <button onClick={() => setShowTournaments(true)} className="p-2 bg-amber-600/20 hover:bg-amber-600/40 rounded-lg transition-all" title="Tournament">
+              <Crown size={18} className="text-amber-400" />
+            </button>
+            <button onClick={() => setShowFriends(true)} className="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 rounded-lg transition-all" title="Friends">
+              <Users size={18} className="text-cyan-400" />
+            </button>
+            <button onClick={() => setShowChat(true)} className="p-2 bg-green-600/20 hover:bg-green-600/40 rounded-lg transition-all" title="Chat">
+              <MessageCircle size={18} className="text-green-400" />
+            </button>
+            <button onClick={() => setShowDailyChallenges(true)} className="p-2 bg-blue-600/20 hover:bg-blue-600/40 rounded-lg transition-all" title="Challenges">
               <Calendar size={18} className="text-blue-400" />
             </button>
-            <button
-              onClick={() => setShowLeaderboard(true)}
-              className="p-2 bg-yellow-600/20 hover:bg-yellow-600/40 rounded-lg transition-all"
-              title="Leaderboard"
-            >
+            <button onClick={() => setShowLeaderboard(true)} className="p-2 bg-yellow-600/20 hover:bg-yellow-600/40 rounded-lg transition-all" title="Leaderboard">
               <Trophy size={18} className="text-yellow-400" />
             </button>
-            <button
-              onClick={() => setShowAchievements(true)}
-              className="p-2 bg-purple-600/20 hover:bg-purple-600/40 rounded-lg transition-all"
-              title="Achievements"
-            >
+            <button onClick={() => setShowAchievements(true)} className="p-2 bg-purple-600/20 hover:bg-purple-600/40 rounded-lg transition-all" title="Achievements">
               <Star size={18} className="text-purple-400" />
             </button>
-            <button
-              onClick={() => setShowShop(true)}
-              className="p-2 bg-green-600/20 hover:bg-green-600/40 rounded-lg transition-all"
-              title="Shop"
-            >
-              <ShoppingBag size={18} className="text-green-400" />
+            <button onClick={() => setShowShop(true)} className="p-2 bg-emerald-600/20 hover:bg-emerald-600/40 rounded-lg transition-all" title="Shop">
+              <ShoppingBag size={18} className="text-emerald-400" />
             </button>
-            <button
-              onClick={() => setShowDataSync(true)}
-              className="p-2 bg-gray-600/20 hover:bg-gray-600/40 rounded-lg transition-all"
-              title="Settings & Data"
-            >
+            <button onClick={() => setShowDataSync(true)} className="p-2 bg-gray-600/20 hover:bg-gray-600/40 rounded-lg transition-all" title="Settings">
               <Settings size={18} className="text-gray-400" />
             </button>
+          </div>
+
+          {/* Mobile: Key buttons + Three-Dot Menu */}
+          <div className="flex md:hidden items-center gap-1">
+            <button onClick={() => setShowLeaderboard(true)} className="p-2 bg-yellow-600/20 rounded-lg" title="Leaderboard">
+              <Trophy size={16} className="text-yellow-400" />
+            </button>
+            <button onClick={() => setShowShop(true)} className="p-2 bg-emerald-600/20 rounded-lg" title="Shop">
+              <ShoppingBag size={16} className="text-emerald-400" />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all"
+                title="More"
+              >
+                <MoreVertical size={18} className="text-gray-300" />
+              </button>
+
+              {/* Mobile Dropdown Menu */}
+              {showMobileMenu && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMobileMenu(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
+                    <button onClick={() => { setShowTournaments(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Crown size={18} className="text-amber-400" /> Weekly Tournament
+                    </button>
+                    <button onClick={() => { setShowFriends(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Users size={18} className="text-cyan-400" /> Friends
+                    </button>
+                    <button onClick={() => { setShowChat(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <MessageCircle size={18} className="text-green-400" /> Global Chat
+                    </button>
+                    <button onClick={() => { setShowDailyChallenges(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Calendar size={18} className="text-blue-400" /> Daily Challenges
+                    </button>
+                    <button onClick={() => { setShowAchievements(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Star size={18} className="text-purple-400" /> Achievements
+                    </button>
+                    <div className="border-t border-gray-700" />
+                    <button onClick={() => { setShowDataSync(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                      <Settings size={18} className="text-gray-400" /> Settings & Data
+                    </button>
+                    {isAuthenticated && (
+                      <button onClick={() => { signOut(); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-900/50 text-left text-red-400">
+                        <LogOut size={18} /> Sign Out
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -251,6 +337,44 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
       {showAchievements && <Achievements onClose={() => setShowAchievements(false)} />}
       {showDailyChallenges && <DailyChallenges onClose={() => setShowDailyChallenges(false)} />}
       {showDataSync && <DataSync onClose={() => setShowDataSync(false)} onImport={refreshPlayer} />}
+      {showTournaments && (
+        <Tournaments
+          onClose={() => setShowTournaments(false)}
+          userId={user?.uid}
+          userName={user?.displayName || undefined}
+          userPhoto={user?.photoURL || undefined}
+        />
+      )}
+      {showFriends && (
+        <Friends
+          onClose={() => setShowFriends(false)}
+          userId={user?.uid}
+          userName={user?.displayName || undefined}
+          userPhoto={user?.photoURL || undefined}
+        />
+      )}
+      {showChat && (
+        <GlobalChat
+          onClose={() => setShowChat(false)}
+          userId={user?.uid}
+          userName={user?.displayName || undefined}
+          userPhoto={user?.photoURL || undefined}
+        />
+      )}
+      {showProfile && (
+        <PlayerProfile
+          onClose={() => setShowProfile(false)}
+          userId={user?.uid}
+          userName={user?.displayName || undefined}
+          userPhoto={user?.photoURL || undefined}
+        />
+      )}
+      {showDailyRewards && (
+        <DailyRewards
+          onClose={() => setShowDailyRewards(false)}
+          onClaim={refreshPlayer}
+        />
+      )}
     </div>
   );
 };

@@ -13,10 +13,13 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ onBack, onPlay }) => {
     const [isDrawing, setIsDrawing] = useState(false);
     const [mode, setMode] = useState<'draw' | 'erase'>('draw');
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Grid config
     const COLS = 40; // 800px / 20
     const ROWS = 30; // 600px / 20
+    const CANVAS_WIDTH = COLS * GRID_SIZE;
+    const CANVAS_HEIGHT = ROWS * GRID_SIZE;
 
     useEffect(() => {
         // Load existing level
@@ -64,32 +67,54 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ onBack, onPlay }) => {
         ctx.shadowBlur = 0;
     };
 
-    const handeInteraction = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!isDrawing) return;
-
+    const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) return null;
 
         const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((e.clientX - rect.left) / GRID_SIZE);
-        const y = Math.floor((e.clientY - rect.top) / GRID_SIZE);
+        const scaleX = CANVAS_WIDTH / rect.width;
+        const scaleY = CANVAS_HEIGHT / rect.height;
 
-        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
+        let clientX, clientY;
+        if ('touches' in e) {
+            clientX = e.touches[0]?.clientX || e.changedTouches[0]?.clientX;
+            clientY = e.touches[0]?.clientY || e.changedTouches[0]?.clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const x = Math.floor((clientX - rect.left) * scaleX / GRID_SIZE);
+        const y = Math.floor((clientY - rect.top) * scaleY / GRID_SIZE);
+
+        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return null;
+        return { x, y };
+    };
+
+    const handleInteraction = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        if (!isDrawing) return;
+        const coords = getCanvasCoords(e);
+        if (!coords) return;
+
+        const { x, y } = coords;
 
         if (mode === 'draw') {
-            // Add wall if not exists
             if (!walls.some(w => w.x === x && w.y === y)) {
                 setWalls(prev => [...prev, { x, y }]);
             }
         } else {
-            // Remove wall
             setWalls(prev => prev.filter(w => w.x !== x || w.y !== y));
         }
     };
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handleStart = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
         setIsDrawing(true);
-        handeInteraction(e); // Click to place immediately
+        handleInteraction(e);
+    };
+
+    const handleEnd = () => {
+        setIsDrawing(false);
     };
 
     const saveLevel = () => {
@@ -104,65 +129,74 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ onBack, onPlay }) => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-4">
-            <div className="w-full max-w-4xl mb-4 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 text-white">
-                        <ArrowLeft />
+        <div className="flex flex-col min-h-screen bg-gray-900 overflow-hidden">
+            {/* Header */}
+            <div className="p-3 flex justify-between items-center flex-shrink-0 bg-gray-800 border-b border-gray-700">
+                <div className="flex items-center gap-2">
+                    <button onClick={onBack} className="p-2 bg-gray-700 rounded-lg hover:bg-gray-600 text-white">
+                        <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <Grid className="text-blue-500" /> Level Editor
+                    <h1 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Grid className="text-blue-500" size={20} /> Level Editor
                     </h1>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-1">
                     <button
                         onClick={() => setMode('draw')}
-                        className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${mode === 'draw' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                        className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-sm transition-colors ${mode === 'draw' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-400'}`}
                     >
-                        <div className="w-4 h-4 bg-gray-400 border border-white"></div> Draw Wall
+                        <div className="w-3 h-3 bg-gray-400 border border-white"></div> Draw Wall
                     </button>
                     <button
                         onClick={() => setMode('erase')}
-                        className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${mode === 'erase' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                        className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 text-sm transition-colors ${mode === 'erase' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}
                     >
-                        <Eraser size={18} /> Erase
+                        <Eraser size={14} /> Erase
                     </button>
                 </div>
             </div>
 
-            <div className="relative border-4 border-gray-700 rounded-lg shadow-2xl overflow-hidden bg-black">
-                <canvas
-                    ref={canvasRef}
-                    width={COLS * GRID_SIZE}
-                    height={ROWS * GRID_SIZE}
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={() => setIsDrawing(false)}
-                    onMouseLeave={() => setIsDrawing(false)}
-                    onMouseMove={handeInteraction}
-                    className="cursor-crosshair block"
-                />
+            {/* Canvas Container - fills available space */}
+            <div ref={containerRef} className="flex-1 flex items-center justify-center p-2 overflow-hidden bg-gray-900">
+                <div className="relative border-2 border-gray-700 rounded-lg shadow-2xl overflow-hidden bg-black w-full max-w-4xl" style={{ aspectRatio: `${COLS}/${ROWS}` }}>
+                    <canvas
+                        ref={canvasRef}
+                        width={CANVAS_WIDTH}
+                        height={CANVAS_HEIGHT}
+                        onMouseDown={handleStart}
+                        onMouseUp={handleEnd}
+                        onMouseLeave={handleEnd}
+                        onMouseMove={handleInteraction}
+                        onTouchStart={handleStart}
+                        onTouchEnd={handleEnd}
+                        onTouchMove={handleInteraction}
+                        className="cursor-crosshair block w-full h-full"
+                        style={{ touchAction: 'none' }}
+                    />
+                </div>
             </div>
 
-            <div className="w-full max-w-4xl mt-6 flex justify-between">
-                <button onClick={clearLevel} className="px-6 py-3 bg-red-900/50 hover:bg-red-900 text-red-200 rounded-lg font-bold flex items-center gap-2">
-                    <Trash2 size={20} /> Clear Map
+            {/* Footer Controls */}
+            <div className="p-3 flex justify-between items-center flex-shrink-0 bg-gray-800 border-t border-gray-700">
+                <button onClick={clearLevel} className="px-4 py-2 bg-red-900/50 hover:bg-red-900 text-red-200 rounded-lg font-bold flex items-center gap-2 text-sm">
+                    <Trash2 size={16} /> Clear Map
                 </button>
 
-                <div className="flex gap-4">
-                    <button onClick={saveLevel} className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold flex items-center gap-2">
-                        <Save size={20} /> Save Level
+                <div className="flex gap-2">
+                    <button onClick={saveLevel} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-bold flex items-center gap-2 text-sm">
+                        <Save size={16} /> Save Level
                     </button>
                     <button
                         onClick={() => { saveLevel(); onPlay(); }}
-                        className="px-8 py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold flex items-center gap-2 shadow-lg hover:scale-105 transition-transform"
+                        className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold flex items-center gap-2 text-sm"
                     >
-                        <Play size={20} /> Play Level
+                        <Play size={16} /> Play Level
                     </button>
                 </div>
             </div>
 
-            <p className="mt-4 text-gray-500 text-sm">
+            <p className="text-center text-gray-500 text-xs py-2 bg-gray-800 flex-shrink-0">
                 Click and drag to paint walls. Saved levels appear in Classic Mode.
             </p>
         </div>
@@ -170,3 +204,4 @@ const LevelEditor: React.FC<LevelEditorProps> = ({ onBack, onPlay }) => {
 };
 
 export default LevelEditor;
+

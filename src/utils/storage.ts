@@ -97,7 +97,7 @@ export const storage = {
         }
     },
 
-    addLeaderboardEntry: (entry: Omit<LeaderboardEntry, 'id' | 'date'>) => {
+    addLeaderboardEntry: (entry: Omit<LeaderboardEntry, 'id' | 'date'>, userId?: string, userPhoto?: string) => {
         const entries = storage.getLeaderboard();
         const newEntry: LeaderboardEntry = {
             ...entry,
@@ -108,6 +108,21 @@ export const storage = {
         // Keep top 500 overall
         entries.sort((a, b) => b.score - a.score);
         localStorage.setItem(STORAGE_KEYS.LEADERBOARD, JSON.stringify(entries.slice(0, 500)));
+
+        // If user is authenticated, also submit to global leaderboard
+        if (userId) {
+            import('./cloudStorage').then(({ addToGlobalLeaderboard }) => {
+                addToGlobalLeaderboard({
+                    name: entry.name,
+                    score: entry.score,
+                    mode: entry.mode,
+                    level: entry.level,
+                    kills: entry.kills,
+                    userId: userId,
+                    photoURL: userPhoto
+                }).catch(console.error);
+            });
+        }
     },
 
     // Achievements
