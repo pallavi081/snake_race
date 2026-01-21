@@ -76,6 +76,10 @@ const AdminPanel: React.FC = () => {
         const envUser = import.meta.env.VITE_ADMIN_USER;
         const envPass = import.meta.env.VITE_ADMIN_PASS;
 
+        console.log('--- Admin Config Check ---');
+        console.log('Target User defined:', !!envUser);
+        console.log('Target Pass defined:', !!envPass);
+
         if (loginUser === envUser && loginPass === envPass) {
             sessionStorage.setItem('admin_auth', 'true');
             setIsPasswordAuthenticated(true);
