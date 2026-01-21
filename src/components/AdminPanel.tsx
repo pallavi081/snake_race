@@ -38,7 +38,11 @@ const AdminPanel: React.FC = () => {
 
     // 2. Data Loading Logic
     useEffect(() => {
-        console.log('[AdminPanel] Effect triggered. isPasswordCheck:', isPasswordAuthenticated, 'isAdmin:', isAdmin, 'adminLoading:', adminLoading);
+        // Automatically bypass password if already recognized as Admin via Google
+        if (isAdmin && !isPasswordAuthenticated) {
+            setIsPasswordAuthenticated(true);
+            sessionStorage.setItem('admin_auth', 'true');
+        }
 
         if (isPasswordAuthenticated) {
             loadData();
@@ -70,15 +74,10 @@ const AdminPanel: React.FC = () => {
         }
     };
 
-    // 3. Handlers
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         const envUser = import.meta.env.VITE_ADMIN_USER;
         const envPass = import.meta.env.VITE_ADMIN_PASS;
-
-        console.log('--- Admin Config Check ---');
-        console.log('Target User defined:', !!envUser);
-        console.log('Target Pass defined:', !!envPass);
 
         if (loginUser === envUser && loginPass === envPass) {
             sessionStorage.setItem('admin_auth', 'true');
