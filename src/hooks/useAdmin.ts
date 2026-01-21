@@ -31,6 +31,7 @@ export const useAdmin = () => {
                     // 2. Fallback: Check email for super-admin (optional/development)
                     const adminEmails = [
                         'rajprajapati123456789@gmail.com',
+                        'rajpratham40@gmail.com',
                         'shripallavi3108@gmail.com',
                         'rajpr@snakerace.com',
                         'admin@snakerace.com'
