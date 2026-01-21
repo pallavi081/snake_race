@@ -3,6 +3,7 @@
 A modern, high-performance Snake game built with **React**, **TypeScript**, and **Vite**. Features a high-octane **Battle Royale mode** with real-time P2P multiplayer, RPG-like progression, and an explosive "Nova Blast" mechanic.
 
 ## 🚀 Key Features
+--
 
 ### 🌐 Real-time Multiplayer
 - **Global Arena**: Use **"Quick Play"** to join global public rooms instantly.
