@@ -56,6 +56,9 @@ export interface LeaderboardEntry {
     timestamp?: Timestamp;
 }
 
+// Helper to get user document reference
+export const getCloudUserRef = (userId: string) => doc(db, 'users', userId);
+
 // Save player data to cloud
 export const syncPlayerToCloud = async (userId: string, data: Partial<CloudPlayerData>): Promise<void> => {
     try {

@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { X, Users, UserPlus, Copy, Check, Trash2, Search, ExternalLink } from 'lucide-react';
 import {
     getFriends,
-    addFriend,
     removeFriend,
     findUserByCode,
     saveFriendCode,
     generateFriendCode,
-    Friend
+    sendFriendRequest,
+    subscribeToFriendRequests,
+    acceptFriendRequest,
+    declineFriendRequest,
+    Friend,
+    FriendRequest
 } from '../utils/socialFirestore';
 
 interface FriendsProps {
@@ -18,15 +22,17 @@ interface FriendsProps {
 }
 
 const Friends: React.FC<FriendsProps> = ({ onClose, userId, userName, userPhoto }) => {
-    const [tab, setTab] = useState<'friends' | 'add'>('friends');
+    const [tab, setTab] = useState<'friends' | 'add' | 'requests'>('friends');
     const [friends, setFriends] = useState<Friend[]>([]);
+    const [requests, setRequests] = useState<FriendRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [friendCode, setFriendCode] = useState('');
     const [myCode, setMyCode] = useState('');
     const [copied, setCopied] = useState(false);
     const [searchResult, setSearchResult] = useState<{ userId: string; name: string; photoURL?: string } | null>(null);
     const [searchError, setSearchError] = useState('');
-    const [adding, setAdding] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
         if (userId) {
@@ -34,6 +40,13 @@ const Friends: React.FC<FriendsProps> = ({ onClose, userId, userName, userPhoto 
             const code = generateFriendCode(userId);
             setMyCode(code);
             saveFriendCode(userId, userName || 'Player', userPhoto);
+
+            // Subscribe to friend requests
+            const unsubscribe = subscribeToFriendRequests(userId, (newRequests) => {
+                setRequests(newRequests);
+            });
+
+            return () => unsubscribe();
         }
     }, [userId, userName, userPhoto]);
 
@@ -70,22 +83,38 @@ const Friends: React.FC<FriendsProps> = ({ onClose, userId, userName, userPhoto 
         }
     };
 
-    const handleAddFriend = async () => {
+    const handleSendRequest = async () => {
         if (!userId || !searchResult) return;
-        setAdding(true);
+        setSending(true);
 
-        const success = await addFriend(userId, searchResult.userId, searchResult.name, searchResult.photoURL);
+        const success = await sendFriendRequest(userId, userName || 'Player', userPhoto, searchResult.userId);
         if (success) {
-            setFriends(prev => [...prev, {
-                userId: searchResult.userId,
-                name: searchResult.name,
-                photoURL: searchResult.photoURL
-            } as Friend]);
             setSearchResult(null);
             setFriendCode('');
-            setTab('friends');
+            alert('Friend request sent!');
+        } else {
+            setSearchError('Failed to send request. Try again.');
         }
-        setAdding(false);
+        setSending(false);
+    };
+
+    const handleAcceptRequest = async (request: FriendRequest) => {
+        if (!userId) return;
+        setActionLoading(request.fromId);
+
+        const success = await acceptFriendRequest(userId, userName || 'Player', userPhoto, request);
+        if (success) {
+            loadFriends();
+        }
+        setActionLoading(null);
+    };
+
+    const handleDeclineRequest = async (fromId: string) => {
+        if (!userId) return;
+        setActionLoading(fromId);
+
+        await declineFriendRequest(userId, fromId);
+        setActionLoading(null);
     };
 
     const handleRemoveFriend = async (friendId: string) => {
@@ -128,20 +157,32 @@ const Friends: React.FC<FriendsProps> = ({ onClose, userId, userName, userPhoto 
                 </div>
 
                 {/* Tabs */}
-                <div className="p-2 border-b border-gray-700 flex gap-2 flex-shrink-0">
+                <div className="p-2 border-b border-gray-700 flex gap-1 flex-shrink-0">
                     <button
                         onClick={() => setTab('friends')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${tab === 'friends' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 ${tab === 'friends' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
                             }`}
                     >
-                        <Users size={16} /> My Friends ({friends.length})
+                        <Users size={14} /> Friends ({friends.length})
                     </button>
                     <button
                         onClick={() => setTab('add')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 ${tab === 'add' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 ${tab === 'add' ? 'bg-green-600' : 'bg-gray-700 hover:bg-gray-600'
                             }`}
                     >
-                        <UserPlus size={16} /> Add Friend
+                        <UserPlus size={14} /> Add
+                    </button>
+                    <button
+                        onClick={() => setTab('requests')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 relative ${tab === 'requests' ? 'bg-purple-600' : 'bg-gray-700 hover:bg-gray-600'
+                            }`}
+                    >
+                        <Search size={14} /> Requests
+                        {requests.length > 0 && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center animate-pulse">
+                                {requests.length}
+                            </span>
+                        )}
                     </button>
                 </div>
 
@@ -186,7 +227,7 @@ const Friends: React.FC<FriendsProps> = ({ onClose, userId, userName, userPhoto 
                                 ))}
                             </div>
                         )
-                    ) : (
+                    ) : tab === 'add' ? (
                         <div className="space-y-4">
                             {/* My Code */}
                             <div className="bg-gray-700/50 rounded-lg p-4">
@@ -245,16 +286,62 @@ const Friends: React.FC<FriendsProps> = ({ onClose, userId, userName, userPhoto 
                                             <div className="font-medium">{searchResult.name}</div>
                                         </div>
                                         <button
-                                            onClick={handleAddFriend}
-                                            disabled={adding}
+                                            onClick={handleSendRequest}
+                                            disabled={sending}
                                             className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-medium flex items-center gap-2"
                                         >
                                             <UserPlus size={16} />
-                                            {adding ? 'Adding...' : 'Add'}
+                                            {sending ? 'Sending...' : 'Send Request'}
                                         </button>
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {requests.length === 0 ? (
+                                <div className="text-center py-12 text-gray-400">
+                                    <Search size={48} className="mx-auto mb-4 opacity-50" />
+                                    <p>No pending requests</p>
+                                </div>
+                            ) : (
+                                requests.map((request) => (
+                                    <div
+                                        key={request.fromId}
+                                        className="flex items-center gap-3 p-3 rounded-lg bg-gray-700/50"
+                                    >
+                                        {request.fromPhoto ? (
+                                            <img src={request.fromPhoto} alt="" className="w-10 h-10 rounded-full" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-lg">
+                                                {request.fromName?.[0]?.toUpperCase() || '?'}
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-medium truncate">{request.fromName}</div>
+                                            <div className="text-xs text-blue-400">Wants to be friends</div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => handleAcceptRequest(request)}
+                                                disabled={actionLoading === request.fromId}
+                                                className="p-2 bg-green-600/20 hover:bg-green-600 text-green-400 hover:text-white rounded transition-colors"
+                                                title="Accept"
+                                            >
+                                                <Check size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeclineRequest(request.fromId)}
+                                                disabled={actionLoading === request.fromId}
+                                                className="p-2 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded transition-colors"
+                                                title="Decline"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     )}
                 </div>

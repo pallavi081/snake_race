@@ -7,7 +7,8 @@ import {
     onAuthStateChanged
 } from 'firebase/auth';
 import { auth, googleProvider } from '../utils/firebase';
-import { syncPlayerToCloud, loadPlayerFromCloud } from '../utils/cloudStorage';
+import { syncPlayerToCloud, loadPlayerFromCloud, getCloudUserRef } from '../utils/cloudStorage';
+import { onSnapshot } from 'firebase/firestore';
 import storage from '../utils/storage';
 
 export interface AuthUser {
@@ -38,26 +39,58 @@ export const useAuth = () => {
                 try {
                     const cloudData = await loadPlayerFromCloud(firebaseUser.uid);
                     if (cloudData) {
-                        // Merge cloud data with local (cloud takes priority for persistent data)
                         const localPlayer = storage.getPlayer();
                         const mergedPlayer = {
                             ...localPlayer,
                             ...cloudData.playerData,
-                            // Keep the higher values
                             totalScore: Math.max(localPlayer.totalScore, cloudData.playerData?.totalScore || 0),
                             coins: Math.max(localPlayer.coins, cloudData.playerData?.coins || 0),
                             wins: Math.max(localPlayer.wins, cloudData.playerData?.wins || 0),
                             gamesPlayed: Math.max(localPlayer.gamesPlayed, cloudData.playerData?.gamesPlayed || 0),
                         };
                         storage.savePlayer(mergedPlayer);
+
+                        // Dispatch event to notify components
+                        window.dispatchEvent(new CustomEvent('playerDataUpdated'));
                     }
                 } catch (err) {
                     console.error('Failed to load cloud data:', err);
                 }
+
+                // Set up real-time listener for cloud updates (e.g., from Admin Panel)
+                const userRef = getCloudUserRef(firebaseUser.uid);
+                const unsubCloud = onSnapshot(userRef, (docSnap) => {
+                    const data = docSnap.data();
+                    if (data && data.playerData) {
+                        const localPlayer = storage.getPlayer();
+
+                        // Check if we actually need to update to avoid infinite loops if we sync back
+                        const remoteCoins = data.playerData.coins || 0;
+                        const remoteWins = data.playerData.wins || 0;
+
+                        // We only update if remote values are different from local
+                        // This allows admin to override local values
+                        if (remoteCoins !== localPlayer.coins || remoteWins !== localPlayer.wins) {
+                            const mergedPlayer = {
+                                ...localPlayer,
+                                ...data.playerData
+                            };
+                            storage.savePlayer(mergedPlayer);
+                            window.dispatchEvent(new CustomEvent('playerDataUpdated'));
+                        }
+                    }
+                }, (err) => {
+                    console.error('Cloud sync listener error:', err);
+                });
+
+                return () => {
+                    unsubscribe();
+                    unsubCloud();
+                };
             } else {
                 setUser(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => unsubscribe();

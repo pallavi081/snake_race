@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings as SettingsIcon, LogIn, LogOut, User, Users, MessageCircle, Gift, Crown, MoreVertical, Palette, Sparkles, Skull, Target } from 'lucide-react';
+import { Shield, Puzzle, Wind, BookOpen, X, Download, Swords, Github, Heart, Code, Trophy, ShoppingBag, Star, Calendar, Settings as SettingsIcon, LogIn, LogOut, User, Users, MessageCircle, Crown, MoreVertical, Palette, Sparkles, Skull, Target } from 'lucide-react';
 import GameInstructions from './GameInstructions';
 import Leaderboard from './Leaderboard';
 import Shop from './Shop';
@@ -20,6 +20,7 @@ import PrivacyPolicy from './PrivacyPolicy';
 import TermsAndConditions from './TermsAndConditions';
 import { storage } from '../utils/storage';
 import { useAuth } from '../hooks/useAuth';
+import { subscribeToFriendRequests } from '../utils/socialFirestore';
 
 interface GameModeSelectionProps {
   onSelectMode: (mode: 'classic' | 'puzzle' | 'physics' | 'battle') => void;
@@ -47,6 +48,7 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
   const [showTerms, setShowTerms] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [player, setPlayer] = useState(storage.getPlayer());
+  const [requestCount, setRequestCount] = useState(0);
 
   // Firebase Auth
   const { user, loading: authLoading, signInWithGoogle, signOut, isAuthenticated } = useAuth();
@@ -64,7 +66,27 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
     // Update streak on load
     storage.updateStreak();
     setPlayer(storage.getPlayer());
+
+    // Listen for real-time player data updates from cloud
+    const handlePlayerUpdate = () => {
+      setPlayer(storage.getPlayer());
+    };
+    window.addEventListener('playerDataUpdated', handlePlayerUpdate);
+
+    return () => window.removeEventListener('playerDataUpdated', handlePlayerUpdate);
   }, []);
+
+  // Listen for friend requests
+  useEffect(() => {
+    if (isAuthenticated && user?.uid) {
+      const unsubscribe = subscribeToFriendRequests(user.uid, (requests) => {
+        setRequestCount(requests.length);
+      });
+      return () => unsubscribe();
+    } else {
+      setRequestCount(0);
+    }
+  }, [isAuthenticated, user?.uid]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -127,8 +149,13 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
             <button onClick={() => setShowSkinCreator(true)} className="p-2 bg-pink-600/20 hover:bg-pink-600/40 rounded-lg transition-all" title="Skin Creator">
               <Palette size={18} className="text-pink-400" />
             </button>
-            <button onClick={() => setShowFriends(true)} className="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 rounded-lg transition-all" title="Friends">
+            <button onClick={() => setShowFriends(true)} className="p-2 bg-cyan-600/20 hover:bg-cyan-600/40 rounded-lg transition-all relative" title="Friends">
               <Users size={18} className="text-cyan-400" />
+              {requestCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center animate-pulse border-2 border-gray-800">
+                  {requestCount}
+                </span>
+              )}
             </button>
             <button onClick={() => setShowChat(true)} className="p-2 bg-green-600/20 hover:bg-green-600/40 rounded-lg transition-all" title="Chat">
               <MessageCircle size={18} className="text-green-400" />
@@ -184,8 +211,13 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
                     <button onClick={() => { setShowSkinCreator(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
                       <Palette size={18} className="text-pink-400" /> Skin Creator
                     </button>
-                    <button onClick={() => { setShowFriends(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
+                    <button onClick={() => { setShowFriends(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left relative">
                       <Users size={18} className="text-cyan-400" /> Friends
+                      {requestCount > 0 && (
+                        <span className="absolute right-4 w-5 h-5 bg-red-500 rounded-full text-[10px] flex items-center justify-center animate-pulse border-2 border-gray-800">
+                          {requestCount}
+                        </span>
+                      )}
                     </button>
                     <button onClick={() => { setShowChat(true); setShowMobileMenu(false); }} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 text-left">
                       <MessageCircle size={18} className="text-green-400" /> Global Chat

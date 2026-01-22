@@ -13,9 +13,6 @@ import {
     serverTimestamp,
     Timestamp,
     onSnapshot,
-    updateDoc,
-    arrayUnion,
-    arrayRemove,
     increment
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -170,7 +167,7 @@ export const findUserByCode = async (code: string): Promise<{ userId: string; na
     }
 };
 
-// Add friend
+// Add friend (Directly - kept for backward compatibility or direct admin adds)
 export const addFriend = async (myId: string, friendId: string, friendName: string, friendPhoto?: string): Promise<boolean> => {
     try {
         const friendRef = doc(db, 'users', myId, 'friends', friendId);
@@ -183,6 +180,87 @@ export const addFriend = async (myId: string, friendId: string, friendName: stri
         return true;
     } catch (error) {
         console.error('Failed to add friend:', error);
+        return false;
+    }
+};
+
+// Send friend request
+export const sendFriendRequest = async (
+    fromId: string,
+    fromName: string,
+    fromPhoto: string | undefined,
+    toId: string
+): Promise<boolean> => {
+    try {
+        const requestRef = doc(db, 'users', toId, 'friendRequests', fromId);
+        await setDoc(requestRef, {
+            fromId,
+            fromName,
+            fromPhoto: fromPhoto || null,
+            sentAt: serverTimestamp()
+        });
+        return true;
+    } catch (error) {
+        console.error('Failed to send friend request:', error);
+        return false;
+    }
+};
+
+// Get friend requests (Real-time listener)
+export const subscribeToFriendRequests = (userId: string, callback: (requests: FriendRequest[]) => void) => {
+    const requestsRef = collection(db, 'users', userId, 'friendRequests');
+    return onSnapshot(requestsRef, (snapshot) => {
+        const requests = snapshot.docs.map(doc => doc.data() as FriendRequest);
+        callback(requests);
+    });
+};
+
+// Accept friend request
+export const acceptFriendRequest = async (
+    myId: string,
+    myName: string,
+    myPhoto: string | undefined,
+    friend: FriendRequest
+): Promise<boolean> => {
+    try {
+        const { deleteDoc } = await import('firebase/firestore');
+
+        // 1. Add to my friends
+        const myFriendRef = doc(db, 'users', myId, 'friends', friend.fromId);
+        await setDoc(myFriendRef, {
+            userId: friend.fromId,
+            name: friend.fromName,
+            photoURL: friend.fromPhoto || null,
+            addedAt: serverTimestamp()
+        });
+
+        // 2. Add me to friend's friends
+        const friendRef = doc(db, 'users', friend.fromId, 'friends', myId);
+        await setDoc(friendRef, {
+            userId: myId,
+            name: myName,
+            photoURL: myPhoto || null,
+            addedAt: serverTimestamp()
+        });
+
+        // 3. Delete the request
+        await deleteDoc(doc(db, 'users', myId, 'friendRequests', friend.fromId));
+
+        return true;
+    } catch (error) {
+        console.error('Failed to accept friend request:', error);
+        return false;
+    }
+};
+
+// Decline friend request
+export const declineFriendRequest = async (myId: string, fromId: string): Promise<boolean> => {
+    try {
+        const { deleteDoc } = await import('firebase/firestore');
+        await deleteDoc(doc(db, 'users', myId, 'friendRequests', fromId));
+        return true;
+    } catch (error) {
+        console.error('Failed to decline friend request:', error);
         return false;
     }
 };
