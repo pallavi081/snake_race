@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Video, StopCircle, Download } from 'lucide-react';
 import { BattleGameState, PowerUpType } from './useBattleGame';
 import { Theme, getSkinById } from '../data/skins';
@@ -28,7 +28,7 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const gridSize = 20;
+  const gridSize = 20; // This now acts as a visual scale (pixels per board unit)
 
   // Viewport settings - show only area around player
   const [viewportSize, setViewportSize] = useState({ width: 400, height: 300 });
@@ -204,18 +204,18 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
       const dt = Date.now() - gameState.lastBlast.time;
       if (dt < 1000) {
         const progress = dt / 1000;
-        const radius = progress * 200; // Expands to 200px
+        const radius = progress * 200;
         ctx.strokeStyle = `rgba(251, 191, 36, ${1 - progress})`;
         ctx.lineWidth = 10 * (1 - progress);
         ctx.beginPath();
-        ctx.arc(gameState.lastBlast.x * gridSize + gridSize / 2, gameState.lastBlast.y * gridSize + gridSize / 2, radius, 0, Math.PI * 2);
+        ctx.arc(gameState.lastBlast.x * gridSize, gameState.lastBlast.y * gridSize, radius, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Secondary fire ring
+        // Secondary ring
         ctx.strokeStyle = `rgba(239, 68, 68, ${1 - progress})`;
         ctx.lineWidth = 4 * (1 - progress);
         ctx.beginPath();
-        ctx.arc(gameState.lastBlast.x * gridSize + gridSize / 2, gameState.lastBlast.y * gridSize + gridSize / 2, radius * 0.7, 0, Math.PI * 2);
+        ctx.arc(gameState.lastBlast.x * gridSize, gameState.lastBlast.y * gridSize, radius * 0.7, 0, Math.PI * 2);
         ctx.stroke();
       }
     }
@@ -263,8 +263,13 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
       const snakeColor = skinData ? skinData.color : snake.color;
 
       ctx.save();
-      snake.body.forEach((seg, idx) => {
-        if (idx === 0) {
+
+      // Draw body with smooth connections
+      // We iterate backwards to draw the head on top
+      for (let i = snake.body.length - 1; i >= 0; i--) {
+        const seg = snake.body[i];
+
+        if (i === 0) {
           ctx.shadowColor = snakeColor;
           ctx.shadowBlur = 15;
           if (skinData?.pattern === 'glow') ctx.shadowBlur = 25;
@@ -274,9 +279,9 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
 
         // Apply Gradient if exists
         if (skinData?.gradient) {
-          const grad = ctx.createLinearGradient(
-            seg.x * gridSize, seg.y * gridSize,
-            (seg.x + 1) * gridSize, (seg.y + 1) * gridSize
+          const grad = ctx.createRadialGradient(
+            seg.x * gridSize, seg.y * gridSize, 0,
+            seg.x * gridSize, seg.y * gridSize, gridSize / 2
           );
           skinData.gradient.forEach((c, i) => grad.addColorStop(i / (skinData.gradient!.length - 1), c));
           ctx.fillStyle = grad;
@@ -284,17 +289,41 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
           ctx.fillStyle = snakeColor;
         }
 
-        const radius = idx === 0 ? gridSize / 2 : gridSize / 2 - 2;
+        const radius = i === 0 ? gridSize / 2 : gridSize / 2.2;
         ctx.beginPath();
-        ctx.arc(seg.x * gridSize + gridSize / 2, seg.y * gridSize + gridSize / 2, radius, 0, Math.PI * 2);
+        ctx.arc(seg.x * gridSize, seg.y * gridSize, radius, 0, Math.PI * 2);
         ctx.fill();
 
+        // Head eyes
+        if (i === 0) {
+          ctx.save();
+          ctx.translate(seg.x * gridSize, seg.y * gridSize);
+          ctx.rotate(snake.angle);
+
+          // Outer eyes (whites)
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(radius * 0.4, -radius * 0.4, radius * 0.35, 0, Math.PI * 2);
+          ctx.arc(radius * 0.4, radius * 0.4, radius * 0.35, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Inner eyes (pupils)
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.arc(radius * 0.5, -radius * 0.4, radius * 0.15, 0, Math.PI * 2);
+          ctx.arc(radius * 0.5, radius * 0.4, radius * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
         // Pattern overlays
-        if (skinData?.pattern === 'striped' && idx % 2 === 0) {
-          ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        if (skinData?.pattern === 'striped' && i % 4 === 0) {
+          ctx.fillStyle = 'rgba(255,255,255,0.1)';
+          ctx.beginPath();
+          ctx.arc(seg.x * gridSize, seg.y * gridSize, radius * 0.7, 0, Math.PI * 2);
           ctx.fill();
         }
-      });
+      }
       ctx.restore();
 
       // --- Hat Rendering ---
@@ -305,20 +334,26 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
         };
         const icon = hatIcons[snake.selectedHat];
         if (icon) {
+          ctx.save();
+          ctx.translate(head.x * gridSize, head.y * gridSize);
           ctx.font = '16px Arial';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(icon, head.x * gridSize + gridSize / 2, head.y * gridSize - 5);
+          const hatRadius = gridSize / 2;
+          ctx.fillText(icon, 0, -hatRadius * 0.8);
+          ctx.restore();
         }
       }
 
       // Shield indicator
       if (snake.shield) {
         ctx.strokeStyle = '#a855f7';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
         ctx.beginPath();
-        ctx.arc(head.x * gridSize + gridSize / 2, head.y * gridSize + gridSize / 2, gridSize / 2 + 5, 0, Math.PI * 2);
+        ctx.arc(head.x * gridSize, head.y * gridSize, gridSize / 2 + 6, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       // Name tag
@@ -326,11 +361,11 @@ const BattleCanvas: React.FC<BattleCanvasProps> = ({ gameState, theme }) => {
       ctx.font = 'bold 11px Arial';
       ctx.textAlign = 'center';
       ctx.shadowColor = '#000';
-      ctx.shadowBlur = 3;
-      ctx.fillText(`${snake.name}`, head.x * gridSize + gridSize / 2, head.y * gridSize - 18);
+      ctx.shadowBlur = 4;
+      ctx.fillText(`${snake.name}`, head.x * gridSize, head.y * gridSize - 22);
       ctx.font = '9px Arial';
       ctx.fillStyle = '#fbbf24';
-      ctx.fillText(`Lv.${snake.level}`, head.x * gridSize + gridSize / 2, head.y * gridSize - 30);
+      ctx.fillText(`Lv.${snake.level}`, head.x * gridSize, head.y * gridSize - 34);
       ctx.shadowBlur = 0;
     });
 

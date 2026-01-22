@@ -9,6 +9,7 @@ import Settings from './Settings';
 import Tournaments from './Tournaments';
 import Friends from './Friends';
 import GlobalChat from './GlobalChat';
+import SnakeLogo from './SnakeLogo';
 import PlayerProfile from './PlayerProfile';
 import DailyRewards from './DailyRewards';
 import BossBattle from './BossBattle';
@@ -275,7 +276,7 @@ const GameModeSelection: React.FC<GameModeSelectionProps> = ({ onSelectMode }) =
 
           <div className="relative inline-block mb-4 group">
             <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
-            <img src="/logo.png" alt="Snake Race Logo" className="w-32 h-32 md:w-40 md:h-40 mx-auto relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:scale-105 transition-transform duration-500" />
+            <SnakeLogo size={160} className="relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] transform hover:scale-105 transition-transform duration-500" />
           </div>
 
           <h1 className="text-4xl md:text-6xl font-black mb-3 bg-gradient-to-r from-blue-400 via-purple-500 to-cyan-400 text-transparent bg-clip-text drop-shadow-lg tracking-tight">Snake Race</h1>

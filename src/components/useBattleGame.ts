@@ -1,8 +1,6 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Peer, { DataConnection } from 'peerjs';
 import { Position, Direction } from '../types/game';
-import { checkWallCollision, getOppositeDirection, GRID_SIZE } from '../utils/gameLogic';
 import { Achievement } from '../data/achievements';
 import { useSound } from '../hooks/useSound';
 import { registerPublicRoom, updatePublicRoom, deletePublicRoom, getAvailablePublicRooms } from '../utils/cloudStorage';
@@ -12,7 +10,8 @@ export interface Snake {
   name: string;
   color: string;
   body: Position[];
-  direction: Direction;
+  angle: number; // In radians
+  targetAngle: number;
   score: number;
   isDead: boolean;
   isBot: boolean;
@@ -85,11 +84,17 @@ export const SNAKE_COLORS = [
 ];
 
 const LEVEL_XP = [0, 100, 250, 500, 800, 1200, 1700, 2500, 3500, 5000];
-const BASE_SPEED = 180;
-const MIN_SPEED = 80;
+const calculateLevel = (xp: number): number => {
+  for (let i = LEVEL_XP.length - 1; i >= 0; i--) {
+    if (xp >= LEVEL_XP[i]) return i + 1;
+  }
+  return 1;
+};
+const BASE_SPEED = 2.5; // Adjusted for RAF (distance per frame)
+const MIN_SPEED = 1.2;
 
 export const useBattleGame = () => {
-  const { playExplosionSound } = useSound();
+  const { playExplosionSound, playSound } = useSound();
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([]);
   const [gameState, setGameState] = useState<BattleGameState>({
     snakes: [],
@@ -116,9 +121,11 @@ export const useBattleGame = () => {
   const connectionsRef = useRef<Map<string, DataConnection>>(new Map());
   const isHostRef = useRef(false);
   const myIdRef = useRef<string | null>(null);
-  const directionRef = useRef<Direction>('UP');
-  const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
-  const speedRef = useRef(BASE_SPEED);
+  const targetAngleRef = useRef<number>(0);
+  const gameLoopRef = useRef<number | null>(null);
+  const lastUpdateRef = useRef<number>(0);
+  const speedRef = useRef(1.5); // Movement per frame
+  const GRID_SIZE = 20;
 
   const generateRandomPosition = (): Position => ({
     x: Math.floor(Math.random() * (BOARD_WIDTH / GRID_SIZE)),
@@ -171,7 +178,8 @@ export const useBattleGame = () => {
             name,
             color,
             body: createInitialSnake(startPos),
-            direction: 'UP',
+            angle: Math.PI * 1.5, // Facing UP
+            targetAngle: Math.PI * 1.5,
             isDead: false,
             isBot: false,
             isPlayer: false,
@@ -230,11 +238,11 @@ export const useBattleGame = () => {
 
       case 'DIRECTION':
         // Player changed direction
-        const { playerId, direction } = message.payload;
+        const { playerId, targetAngle } = message.payload;
         setGameState(prev => ({
           ...prev,
           snakes: prev.snakes.map(s =>
-            s.id === playerId ? { ...s, direction } : s
+            s.id === playerId ? { ...s, targetAngle } : s
           )
         }));
         break;
@@ -308,7 +316,8 @@ export const useBattleGame = () => {
         name: playerName,
         body: createInitialSnake(startPos),
         color: playerColor,
-        direction: 'UP',
+        angle: Math.PI * 1.5,
+        targetAngle: Math.PI * 1.5,
         isDead: false,
         isBot: false,
         isPlayer: true,
@@ -484,17 +493,21 @@ export const useBattleGame = () => {
     }
   }, [broadcast, gameState.isPrivate, gameState.roomId]);
 
-  // Change direction
+  // Change angle based on direction input
   const changeDirection = useCallback((newDirection: Direction) => {
-    if (getOppositeDirection(directionRef.current) !== newDirection) {
-      directionRef.current = newDirection;
-
-      // Broadcast direction change to all peers
-      broadcast({
-        type: 'DIRECTION',
-        payload: { playerId: gameState.myId, direction: newDirection }
-      });
+    let targetAngle = targetAngleRef.current;
+    switch (newDirection) {
+      case 'UP': targetAngle = -Math.PI / 2; break;
+      case 'DOWN': targetAngle = Math.PI / 2; break;
+      case 'LEFT': targetAngle = Math.PI; break;
+      case 'RIGHT': targetAngle = 0; break;
     }
+
+    targetAngleRef.current = targetAngle;
+    broadcast({
+      type: 'DIRECTION',
+      payload: { playerId: gameState.myId, targetAngle }
+    });
   }, [broadcast, gameState.myId]);
 
   // Activate Nova Mode (Boom Blaster)
@@ -529,7 +542,8 @@ export const useBattleGame = () => {
         ...s,
         isDead: false,
         body: createInitialSnake(generateRandomPosition()),
-        direction: 'UP' as Direction,
+        angle: Math.PI * 1.5,
+        targetAngle: Math.PI * 1.5,
         speedBoost: false,
         shield: false,
         doubleXp: false,
@@ -542,29 +556,39 @@ export const useBattleGame = () => {
   }, []);
 
   // Game Loop (HOST ONLY runs the game loop and syncs state to clients)
+  // Game Loop (HOST ONLY runs the game loop and syncs state to clients)
   useEffect(() => {
     if (!gameState.gameStarted || gameState.gameOver || !isHostRef.current) return;
 
     const speedInterval = setInterval(() => {
-      speedRef.current = Math.max(MIN_SPEED, speedRef.current - 2);
+      speedRef.current = Math.max(MIN_SPEED, speedRef.current - 0.02);
       setGameState(prev => ({ ...prev, gameTime: prev.gameTime + 1 }));
     }, 1000);
 
-    const runGameLoop = () => {
+    const runGameLoop = (timestamp: number) => {
+      if (!lastUpdateRef.current) lastUpdateRef.current = timestamp;
+      const dt = timestamp - lastUpdateRef.current;
+      lastUpdateRef.current = timestamp;
+
       setGameState(prev => {
         if (!prev.gameStarted || prev.gameOver) return prev;
 
-        // Game logic (same as before but simplified)
         let newFoods = [...prev.foods];
-        if (newFoods.length < 40 && Math.random() < 0.15) {
-          newFoods.push(generateRandomPosition());
+        if (newFoods.length < 60 && Math.random() < 0.2) {
+          newFoods.push({
+            x: Math.random() * (prev.canvasWidth / 20),
+            y: Math.random() * (prev.canvasHeight / 20)
+          });
         }
 
         let newPowerUps = prev.powerUps.filter(p => p.expiresAt > Date.now());
         if (newPowerUps.length < 6 && Math.random() < 0.03) {
           newPowerUps.push({
             id: `powerup-${Date.now()}`,
-            position: generateRandomPosition(),
+            position: {
+              x: Math.random() * (prev.canvasWidth / 20),
+              y: Math.random() * (prev.canvasHeight / 20)
+            },
             type: POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)],
             expiresAt: Date.now() + 30000
           });
@@ -573,75 +597,102 @@ export const useBattleGame = () => {
         let newSnakes = prev.snakes.map(snake => {
           if (snake.isDead) return snake;
 
-          let currentDir = snake.direction;
+          let currentAngle = snake.angle;
+          let targetAngle = snake.targetAngle;
+
           if (snake.isPlayer && snake.id === prev.myId) {
-            currentDir = directionRef.current;
+            targetAngle = targetAngleRef.current;
           }
 
-          const head = { ...snake.body[0] };
-          switch (currentDir) {
-            case 'UP': head.y -= 1; break;
-            case 'DOWN': head.y += 1; break;
-            case 'LEFT': head.x -= 1; break;
-            case 'RIGHT': head.x += 1; break;
+          let angleDiff = targetAngle - currentAngle;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+
+          const turnSpeed = 0.12;
+          if (Math.abs(angleDiff) > turnSpeed) {
+            currentAngle += Math.sign(angleDiff) * turnSpeed;
+          } else {
+            currentAngle = targetAngle;
           }
 
-          return { ...snake, body: [head, ...snake.body], direction: currentDir };
+          const moveSpeed = snake.speedBoost ? speedRef.current * 1.6 : speedRef.current;
+          const head = {
+            x: snake.body[0].x + Math.cos(currentAngle) * moveSpeed * (dt / 16.67),
+            y: snake.body[0].y + Math.sin(currentAngle) * moveSpeed * (dt / 16.67)
+          };
+
+          const newBody = [head, ...snake.body];
+          const desiredLength = 10 + (snake.score / 15);
+          const SEG_DISTANCE = 0.4;
+          const filteredBody = [head];
+          let lastAdded = head;
+
+          for (let i = 1; i < newBody.length; i++) {
+            const seg = newBody[i];
+            const dist = Math.sqrt((seg.x - lastAdded.x) ** 2 + (seg.y - lastAdded.y) ** 2);
+            if (dist >= SEG_DISTANCE) {
+              filteredBody.push(seg);
+              lastAdded = seg;
+            }
+            if (filteredBody.length >= desiredLength) break;
+          }
+
+          return { ...snake, body: filteredBody, angle: currentAngle, targetAngle };
         });
 
-        // Collision detection - using newSnakes for accurate position checking
-        newSnakes = newSnakes.map(snake => {
+        // Collision detection
+        const GRID_SCALER = 20;
+        newSnakes = newSnakes.map((snake) => {
           if (snake.isDead) return snake;
           const head = snake.body[0];
 
-          // Wall collision
-          if (checkWallCollision(head, prev.canvasWidth, prev.canvasHeight)) {
+          if (head.x < 0 || head.x > prev.canvasWidth / GRID_SCALER || head.y < 0 || head.y > prev.canvasHeight / GRID_SCALER) {
             if (snake.shield) return { ...snake, shield: false };
+            if (snake.id === prev.myId) playSound(200, 0.3, 'sawtooth');
             return { ...snake, isDead: true };
           }
 
-          // Collision with other snakes (using updated positions)
           for (const other of newSnakes) {
             if (other.isDead) continue;
             const hit = other.body.some((seg, idx) => {
-              // Skip first 3 segments for self-collision to prevent false deaths during turns
-              if (other.id === snake.id && idx < 3) return false;
-              return seg.x === head.x && seg.y === head.y;
+              if (other.id === snake.id && idx < 8) return false;
+              const dist = Math.sqrt((seg.x - head.x) ** 2 + (seg.y - head.y) ** 2);
+              return dist < 0.6;
             });
             if (hit) {
               if (snake.shield) return { ...snake, shield: false };
-              // Credit kill to the other snake if it's different
-              if (other.id !== snake.id) {
-                const ki = newSnakes.findIndex(s => s.id === other.id);
-                if (ki !== -1 && !newSnakes[ki].isDead) {
-                  newSnakes[ki] = {
-                    ...newSnakes[ki],
-                    kills: newSnakes[ki].kills + 1,
-                    xp: newSnakes[ki].xp + 50,
-                    score: newSnakes[ki].score + 100
-                  };
-                }
-              }
+              if (snake.id === prev.myId) playSound(150, 0.4, 'sawtooth');
               return { ...snake, isDead: true };
             }
           }
 
-          // Food collision
-          const fi = newFoods.findIndex(f => f.x === head.x && f.y === head.y);
-          if (fi !== -1) {
-            newFoods.splice(fi, 1);
-            const xpGain = 10 * snake.level;
+          const headX = head.x;
+          const headY = head.y;
+          const initialFoodCount = newFoods.length;
+          newFoods = newFoods.filter(f => {
+            const dist = Math.sqrt((f.x - headX) ** 2 + (f.y - headY) ** 2);
+            return dist > 1.0;
+          });
+
+          if (newFoods.length < initialFoodCount) {
+            const eatenCount = initialFoodCount - newFoods.length;
+            const xpGain = eatenCount * 12 * snake.level;
             const newXp = snake.xp + xpGain;
-            return { ...snake, score: snake.score + 10, xp: newXp, level: calculateLevel(newXp) };
-          } else {
-            snake.body.pop();
+            if (snake.id === prev.myId) playSound(800, 0.05, 'sine', 0.05);
+            return { ...snake, score: snake.score + (eatenCount * 10), xp: newXp, level: calculateLevel(newXp) };
           }
 
-          // Power-up collision
-          const pi = newPowerUps.findIndex(p => p.position.x === head.x && p.position.y === head.y);
+          const headX_pu = head.x;
+          const headY_pu = head.y;
+          const pi = newPowerUps.findIndex(p => {
+            const dist = Math.sqrt((p.position.x - headX_pu) ** 2 + (p.position.y - headY_pu) ** 2);
+            return dist < 1.2;
+          });
+
           if (pi !== -1) {
             const pu = newPowerUps[pi];
             newPowerUps.splice(pi, 1);
+            if (snake.id === prev.myId) playSound(1200, 0.1, 'sine', 0.1);
             switch (pu.type) {
               case 'speed': return { ...snake, speedBoost: true, score: snake.score + 25 };
               case 'shield': return { ...snake, shield: true, score: snake.score + 50 };
@@ -654,92 +705,66 @@ export const useBattleGame = () => {
             }
           }
 
-          // Nova Mode Charging & Passive Gain
           let newNovaMeter = snake.novaMeter;
           if (!snake.isNovaActive && newNovaMeter < 100) {
-            newNovaMeter = Math.min(100, newNovaMeter + 0.1); // Passive gain
+            newNovaMeter = Math.min(100, newNovaMeter + 0.05);
           }
 
           return { ...snake, novaMeter: newNovaMeter };
         });
 
-        // --- NOVA BLAST COLLISION (AOE) ---
         const activeNovaSnakes = newSnakes.filter(s => s.isNovaActive);
         let goldenGems: Position[] = [];
         let blastPos: Position | null = null;
 
         if (activeNovaSnakes.length > 0) {
-          const BLAST_RADIUS = 6;
+          const BLAST_RADIUS = 5;
           blastPos = activeNovaSnakes[0].body[0];
-
           activeNovaSnakes.forEach(novaSnake => {
             const head = novaSnake.body[0];
             newSnakes = newSnakes.map(target => {
               if (target.id === novaSnake.id || target.isDead) return target;
               const isHit = target.body.some(seg => {
-                const dx = Math.abs(seg.x - head.x);
-                const dy = Math.abs(seg.y - head.y);
-                return Math.sqrt(dx * dx + dy * dy) <= BLAST_RADIUS;
+                const dist = Math.sqrt((seg.x - head.x) ** 2 + (seg.y - head.y) ** 2);
+                return dist <= BLAST_RADIUS;
               });
               if (isHit) {
                 target.body.forEach(seg => {
-                  if (Math.random() < 0.7) goldenGems.push(seg);
+                  if (Math.random() < 0.6) goldenGems.push(seg);
                 });
                 return { ...target, isDead: true };
               }
               return target;
             });
           });
-
-          // Reset Nova flag
           newSnakes = newSnakes.map(s => ({ ...s, isNovaActive: false }));
         }
 
-        // Add golden gems
-        if (goldenGems.length > 0) {
-          newFoods = [...newFoods, ...goldenGems];
-        }
-
+        if (goldenGems.length > 0) newFoods = [...newFoods, ...goldenGems];
         const lastBlast = blastPos ? { x: blastPos.x, y: blastPos.y, time: Date.now() } : prev.lastBlast;
         if (blastPos) playExplosionSound();
 
-        // Track newly eliminated players
         const newlyEliminated: { id: string; name: string; time: number; killedBy?: string }[] = [];
         newSnakes.forEach((snake, idx) => {
           const wasAlive = prev.snakes[idx] && !prev.snakes[idx].isDead;
           if (wasAlive && snake.isDead) {
-            // Find who killed them (if collision with another snake)
             const killer = newSnakes.find(s => s.id !== snake.id && s.kills > (prev.snakes.find(ps => ps.id === s.id)?.kills || 0));
-            newlyEliminated.push({
-              id: snake.id,
-              name: snake.name,
-              time: prev.gameTime,
-              killedBy: killer?.name
-            });
+            newlyEliminated.push({ id: snake.id, name: snake.name, time: prev.gameTime, killedBy: killer?.name });
           }
         });
 
-        // Merge with existing eliminated players
         const eliminatedPlayers = [...prev.eliminatedPlayers, ...newlyEliminated];
-
-        // Winner check - calculate final scores with size and time bonuses
         const alive = newSnakes.filter(s => !s.isDead);
         let winner = prev.winner;
         let gameOver: boolean = prev.gameOver;
 
         if (alive.length === 1 && prev.snakes.length > 1) {
-          // Calculate final score with size (body length) and survival time bonuses
           const winnerSnake = alive[0];
           const sizeBonus = winnerSnake.body.length * 5;
           const timeBonus = prev.gameTime * 2;
-          const totalScore = winnerSnake.score + sizeBonus + timeBonus + 500; // +500 for winning
-
-          // Update winner's final score
+          const totalScore = winnerSnake.score + sizeBonus + timeBonus + 500;
           const winnerIdx = newSnakes.findIndex(s => s.id === winnerSnake.id);
-          if (winnerIdx !== -1) {
-            newSnakes[winnerIdx] = { ...newSnakes[winnerIdx], score: totalScore };
-          }
-
+          if (winnerIdx !== -1) newSnakes[winnerIdx] = { ...newSnakes[winnerIdx], score: totalScore };
           winner = winnerSnake.name;
           gameOver = true;
         } else if (alive.length === 0) {
@@ -747,25 +772,20 @@ export const useBattleGame = () => {
         }
 
         const newState = { ...prev, snakes: newSnakes, foods: newFoods, powerUps: newPowerUps, gameOver, winner, eliminatedPlayers, lastBlast };
-
-        // Sync state to clients
-        if (isHostRef.current) {
-          broadcast({ type: 'GAME_STATE', payload: newState });
-        }
-
+        if (isHostRef.current) broadcast({ type: 'GAME_STATE', payload: newState });
         return newState;
       });
 
-      gameLoopRef.current = setTimeout(runGameLoop, speedRef.current);
+      gameLoopRef.current = requestAnimationFrame(runGameLoop);
     };
 
-    gameLoopRef.current = setTimeout(runGameLoop, speedRef.current);
+    gameLoopRef.current = requestAnimationFrame(runGameLoop);
 
     return () => {
       clearInterval(speedInterval);
-      if (gameLoopRef.current) clearTimeout(gameLoopRef.current);
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
-  }, [gameState.gameStarted, gameState.gameOver, broadcast]);
+  }, [gameState.gameStarted, gameState.gameOver, broadcast, playExplosionSound, playSound]);
 
   // Keyboard controls
   useEffect(() => {
@@ -782,14 +802,13 @@ export const useBattleGame = () => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      connectionsRef.current.forEach(conn => conn.close());
       if (peerRef.current) {
         if (isHostRef.current && gameState.roomId) {
           deletePublicRoom(gameState.roomId);
         }
         peerRef.current.destroy();
       }
-      if (gameLoopRef.current) clearTimeout(gameLoopRef.current);
+      if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
     };
   }, [gameState.roomId]);
 
