@@ -84,12 +84,6 @@ export const SNAKE_COLORS = [
 ];
 
 const LEVEL_XP = [0, 100, 250, 500, 800, 1200, 1700, 2500, 3500, 5000];
-const calculateLevel = (xp: number): number => {
-  for (let i = LEVEL_XP.length - 1; i >= 0; i--) {
-    if (xp >= LEVEL_XP[i]) return i + 1;
-  }
-  return 1;
-};
 const BASE_SPEED = 2.5; // Adjusted for RAF (distance per frame)
 const MIN_SPEED = 1.2;
 
@@ -292,22 +286,43 @@ export const useBattleGame = () => {
     isHostRef.current = true;
     myIdRef.current = myId;
 
+    // Cleanup any existing peer
+    if (peerRef.current) {
+      peerRef.current.destroy();
+    }
+
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
 
     // Create peer with room ID
     const peer = new Peer(`snake-${roomId}`, {
+      host: '0.peerjs.com',
+      port: 443,
+      secure: true,
       debug: 1,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun.l.google.com:19305' },
         ]
       }
     });
 
+    // Timeout cleanup
+    const timeout = setTimeout(() => {
+      if (peerRef.current && !peerRef.current.open && !peerRef.current.destroyed) {
+        console.error('❌ Create Room timeout: Signaling server took too long');
+        peerRef.current.destroy();
+        setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
+      }
+    }, 15000);
+
     peerRef.current = peer;
 
     peer.on('open', (id) => {
+      clearTimeout(timeout);
       console.log('🎮 Host peer opened:', id);
 
       const startPos = generateRandomPosition();
@@ -373,21 +388,42 @@ export const useBattleGame = () => {
     isHostRef.current = false;
     myIdRef.current = myId;
 
+    // Cleanup any existing peer
+    if (peerRef.current) {
+      peerRef.current.destroy();
+    }
+
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting', roomId, myId }));
 
     const peer = new Peer(myId, {
-      debug: 2, // More verbose logging
+      host: '0.peerjs.com',
+      port: 443,
+      secure: true,
+      debug: 1,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun.l.google.com:19305' },
         ]
       }
     });
 
+    // Timeout cleanup
+    const timeout = setTimeout(() => {
+      if (peerRef.current && !peerRef.current.destroyed && gameState.connectionStatus === 'connecting') {
+        console.error('❌ Join Room timeout');
+        peerRef.current.destroy();
+        setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
+      }
+    }, 15000);
+
     peerRef.current = peer;
 
     peer.on('open', () => {
+      clearTimeout(timeout);
       console.log('🎮 Client peer opened, connecting to host...');
       const hostPeerId = `snake-${roomId}`;
       console.log('🔗 Connecting to host peer:', hostPeerId);

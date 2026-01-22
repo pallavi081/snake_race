@@ -166,7 +166,44 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900">
         <Loader2 size={40} className="animate-spin text-blue-500 mb-4" />
-        <p className="text-white">Connecting to room...</p>
+        <p className="text-white mb-6">Connecting to room...</p>
+        <button
+          onClick={() => {
+            // Trigger a refresh/reset to escape if stuck
+            window.location.reload();
+          }}
+          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-xs text-gray-400"
+        >
+          Cancel & Return Home
+        </button>
+      </div>
+    );
+  }
+
+  if (gameState.connectionStatus === 'error') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900 text-center">
+        <div className="bg-red-900/40 p-4 rounded-full mb-4">
+          <Skull size={40} className="text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Connection Failed</h2>
+        <p className="text-gray-400 text-sm mb-6 max-w-xs">
+          We couldn't reach the battle arena. This might be due to your network or the signaling server being busy.
+        </p>
+        <div className="flex flex-col w-full max-w-xs gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onBack}
+            className="w-full bg-gray-800 hover:bg-gray-700 py-3 rounded-lg font-bold text-gray-400"
+          >
+            Back to Home
+          </button>
+        </div>
       </div>
     );
   }
