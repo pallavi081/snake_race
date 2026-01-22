@@ -18,8 +18,24 @@ export const useAdmin = () => {
                 return;
             }
 
+            // 1. Check email whitelist FIRST (Fast & offline-capable if user object is cached)
+            const adminEmails = [
+                'rajprajapati123456789@gmail.com',
+                'rajpratham40@gmail.com',
+                'shripallavi3108@gmail.com',
+                'rajpr@snakerace.com',
+                'admin@snakerace.com'
+            ];
+
+            if (user.email && (user.email.includes('rajprajapati') || adminEmails.includes(user.email))) {
+                console.log('[useAdmin] Email matched whitelist:', user.email);
+                setIsAdmin(true);
+                setAdminLoading(false);
+                return;
+            }
+
+            // 2. Fallback: Check 'admins' collection in Firestore
             try {
-                // 1. Check if user is in 'admins' collection
                 const adminRef = doc(db, 'admins', user.uid);
                 const adminSnap = await getDoc(adminRef);
 
@@ -27,28 +43,14 @@ export const useAdmin = () => {
                     console.log('[useAdmin] User found in admins collection');
                     setIsAdmin(true);
                 } else {
-                    console.log('[useAdmin] User not in admins collection, checking email whitelist');
-                    // 2. Fallback: Check email for super-admin (optional/development)
-                    const adminEmails = [
-                        'rajprajapati123456789@gmail.com',
-                        'rajpratham40@gmail.com',
-                        'shripallavi3108@gmail.com',
-                        'rajpr@snakerace.com',
-                        'admin@snakerace.com'
-                    ];
-                    if (user.email && (user.email.includes('rajprajapati') || adminEmails.includes(user.email))) {
-                        console.log('[useAdmin] Email matched whitelist:', user.email);
-                        setIsAdmin(true);
-                    } else {
-                        console.log('[useAdmin] Access denied for email:', user.email);
-                        setIsAdmin(false);
-                    }
+                    console.log('[useAdmin] Access denied for:', user.email);
+                    setIsAdmin(false);
                 }
             } catch (error) {
-                console.error('[useAdmin] Error checking admin status:', error);
+                console.error('[useAdmin] Firestore check failed (likely permissions):', error);
+                // We already checked whitelist, so if this fails, we assume not admin
                 setIsAdmin(false);
             } finally {
-                console.log('[useAdmin] Admin check complete. Result:', isAdmin);
                 setAdminLoading(false);
             }
         };
