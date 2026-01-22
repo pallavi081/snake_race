@@ -262,45 +262,6 @@ export const getAvailablePublicRooms = async (): Promise<any[]> => {
     }
 };
 
-// --- Universal Room Signaling (for both Private & Public) ---
-
-export const registerBattleRoom = async (roomId: string, hostPeerId: string, isPrivate: boolean, hostName: string): Promise<void> => {
-    try {
-        const roomRef = doc(db, 'battle_rooms', roomId);
-        await setDoc(roomRef, {
-            roomId,
-            hostPeerId,
-            hostName,
-            isPrivate,
-            status: 'waiting',
-            lastUpdated: serverTimestamp()
-        });
-        console.log(`✅ Registered battle room: ${roomId} -> ${hostPeerId}`);
-    } catch (error) {
-        console.error('❌ Failed to register battle room:', error);
-    }
-};
-
-export const getBattleRoom = async (roomId: string): Promise<any | null> => {
-    try {
-        const roomRef = doc(db, 'battle_rooms', roomId.toUpperCase());
-        const snap = await getDoc(roomRef);
-        return snap.exists() ? snap.data() : null;
-    } catch (error) {
-        console.error('❌ Failed to get battle room:', error);
-        return null;
-    }
-};
-
-export const deleteBattleRoom = async (roomId: string): Promise<void> => {
-    try {
-        const roomRef = doc(db, 'battle_rooms', roomId.toUpperCase());
-        await deleteDoc(roomRef);
-    } catch (error) {
-        console.error('❌ Failed to delete battle room:', error);
-    }
-};
-
 // Get global settings (e.g., event overrides)
 export const getGlobalSettings = async (): Promise<any> => {
     try {

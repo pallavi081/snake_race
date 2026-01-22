@@ -3,7 +3,7 @@ import Peer, { DataConnection } from 'peerjs';
 import { Position, Direction } from '../types/game';
 import { Achievement } from '../data/achievements';
 import { useSound } from '../hooks/useSound';
-import { registerPublicRoom, updatePublicRoom, deletePublicRoom, getAvailablePublicRooms, registerBattleRoom, getBattleRoom, deleteBattleRoom } from '../utils/cloudStorage';
+import { registerPublicRoom, updatePublicRoom, deletePublicRoom, getAvailablePublicRooms } from '../utils/cloudStorage';
 
 export interface Snake {
   id: string;
@@ -117,7 +117,6 @@ export const useBattleGame = () => {
       if (isHostRef.current && myIdRef.current && gameState.roomId) {
         console.log('🧹 Cleaning up room signaling:', gameState.roomId);
         deletePublicRoom(gameState.roomId);
-        deleteBattleRoom(gameState.roomId);
       }
       if (peerRef.current) {
         peerRef.current.destroy();
@@ -307,8 +306,9 @@ export const useBattleGame = () => {
 
     setGameState(prev => ({ ...prev, connectionStatus: 'connecting' }));
 
-    // Create peer with random ID for maximum reliability
-    const peer = new Peer({
+    // Create peer with a predictable ID for easy discovery
+    const hostPeerId = `snakerace-${roomId}`;
+    const peer = new Peer(hostPeerId, {
       host: '0.peerjs.com',
       port: 443,
       secure: true,
@@ -335,12 +335,9 @@ export const useBattleGame = () => {
 
     peerRef.current = peer;
 
-    peer.on('open', async (dynamicPeerId) => {
+    peer.on('open', (id) => {
       clearTimeout(timeout);
-      console.log('🎮 Host peer opened with dynamic ID:', dynamicPeerId);
-
-      // Register the mapping in Firestore so clients can find us
-      await registerBattleRoom(roomId, dynamicPeerId, isPrivate, playerName);
+      console.log('🎮 Host peer opened:', id);
 
       const startPos = generateRandomPosition();
       const playerSnake: Snake = {
@@ -439,29 +436,32 @@ export const useBattleGame = () => {
 
     peerRef.current = peer;
 
-    peer.on('open', async (myDynamicId) => {
-      console.log('🎮 Client peer opened, looking up host for room:', roomId);
+    peer.on('open', () => {
+      clearTimeout(timeout);
+      console.log('🎮 Client peer opened, connecting to host:', roomId);
 
-      try {
-        // Look up the host's actual dynamic Peer ID from Firestore
-        const roomData = await getBattleRoom(roomId);
+      const hostPeerId = `snakerace-${roomId}`;
+      let retries = 0;
+      const MAX_RETRIES = 5;
 
-        if (!roomData || !roomData.hostPeerId) {
-          console.error('❌ Room not found in Firestore:', roomId);
-          clearTimeout(timeout);
-          alert('Room not found. Please check the Room ID.');
-          peer.destroy();
-          setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
-          return;
-        }
-
-        clearTimeout(timeout);
-        const hostPeerId = roomData.hostPeerId;
-        console.log('🔗 Connecting to host dynamic ID:', hostPeerId);
-
+      const attemptConnection = () => {
+        console.log(`🔗 Connecting to host (Attempt ${retries + 1}/${MAX_RETRIES})...`);
         const conn = peer.connect(hostPeerId, { reliable: true });
 
+        const connTimeout = setTimeout(() => {
+          if (!conn.open && retries < MAX_RETRIES) {
+            console.warn('⚠️ Connection attempt timed out, retrying...');
+            conn.close();
+            retries++;
+            setTimeout(attemptConnection, 1000);
+          } else if (!conn.open) {
+            console.error('❌ Connection failed after max retries.');
+            setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
+          }
+        }, 4000);
+
         conn.on('open', () => {
+          clearTimeout(connTimeout);
           console.log('✅ Connection to host opened!');
           connectionsRef.current.set(conn.peer, conn);
 
@@ -493,12 +493,19 @@ export const useBattleGame = () => {
           setGameState(prev => ({ ...prev, isConnected: false, connectionStatus: 'disconnected' }));
         });
 
-        conn.on('error', (err) => console.error('❌ Conn error:', err));
-      } catch (error) {
-        console.error('❌ Signaling error:', error);
-        clearTimeout(timeout);
-        setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
-      }
+        conn.on('error', (err) => {
+          clearTimeout(connTimeout);
+          console.error('❌ Conn error:', err);
+          if (retries < MAX_RETRIES) {
+            retries++;
+            setTimeout(attemptConnection, 1000);
+          } else {
+            setGameState(prev => ({ ...prev, connectionStatus: 'error' }));
+          }
+        });
+      };
+
+      attemptConnection();
     });
 
     peer.on('error', (err) => {
