@@ -166,7 +166,10 @@ const BattleGame: React.FC<BattleGameProps> = ({ onBack }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-900">
         <Loader2 size={40} className="animate-spin text-blue-500 mb-4" />
-        <p className="text-white mb-6">Connecting to room...</p>
+        <p className="text-white mb-6">Connecting to arena...</p>
+        <div className="text-[10px] text-gray-500 mb-4 animate-pulse">
+          Tip: Shared links usually connect in 2-5 seconds.
+        </div>
         <button
           onClick={() => {
             // Trigger a refresh/reset to escape if stuck
